@@ -1,11 +1,11 @@
 // "use client";
 
-import { cn } from "@/lib/utils";
-
 import Link from "next/link";
 import { Menu, Sparkles } from "lucide-react";
 import { Poppins } from "next/font/google";
 import { UserButton } from "@clerk/nextjs";
+
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ModeToggle } from "@/components/mode-toggle";
 
