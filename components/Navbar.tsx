@@ -7,6 +7,7 @@ import { Menu, Sparkles } from "lucide-react";
 import { Poppins } from "next/font/google";
 import { UserButton } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
+import { ModeToggle } from "@/components/mode-toggle";
 
 const font = Poppins({
   weight: "600",
@@ -38,6 +39,7 @@ const Navbar = () => {
            w-4 text-white fill-white ml-2"
           />
         </Button>
+        <ModeToggle />
         <UserButton />
       </div>
     </div>
