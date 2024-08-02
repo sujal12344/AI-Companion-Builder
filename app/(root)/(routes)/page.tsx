@@ -1,13 +1,11 @@
-import { UserButton } from "@clerk/nextjs";
-import React from "react";
+import SearchInput from "@/components/SearchInput";
 
-const page = () => {
+const RootPage = () => {
   return (
-    // <div className="flex justify-center items-center h-[70vh] scale-[2]">
-    //   <UserButton afterSignOutUrl="/" />
-    // </div>
-    <div className=""></div>
+    <div className="h-full p-4 space-y-2">
+      <SearchInput />
+    </div>
   );
 };
 
-export default page;
+export default RootPage;
