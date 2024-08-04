@@ -27,8 +27,8 @@ const SearchInput = () => {
 
   useEffect(() => {
     const query = {
-      // name: debouncedValue,
-      name: debouncedValue.trimStart(),
+      name: debouncedValue,
+      // name: debouncedValue.trimStart(),
       categoryId,
     };
 
