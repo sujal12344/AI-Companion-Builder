@@ -28,7 +28,6 @@ const SearchInput = () => {
   useEffect(() => {
     const query = {
       name: debouncedValue,
-      // name: debouncedValue.trimStart(),
       categoryId,
     };
 
