@@ -9,8 +9,9 @@ datasource db {
 }
 
 model Category {
-  id   String @id @default(uuid())
-  name String
+  id         String      @id @default(uuid())
+  name       String
+  companions Companion[]
 }
 
 model Companion {
@@ -26,9 +27,8 @@ model Companion {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  category   Category  @relation(fields: [categoryId], references: [id])
+  category   Category @relation(fields: [categoryId], references: [id])
   categoryId String
-  messages   Message[]
 
   @@index([categoryId])
 }
