@@ -26,13 +26,19 @@
 ## 📋 <a name="table">Table of Contents</a>
 
 1. 🤖 [Introduction](#introduction)
-2. ⚙️ [Tech Stack](#tech-stack)
-3. 🔋 [Features](#features)
-4. 🤸 [Quick Start](#quick-start)
+2. 📜 [About](#about)
+3. ⚙️ [Tech Stack](#tech-stack)
+4. 🔋 [Features](#features)
+5. 🤸 [Quick Start](#quick-start)
 
 ## <a name="introduction">🤖 Introduction</a>
 
 AI-Companion provides an interactive platform for users to engage with pre-existing models of scientists and famous personalities. Dive into meaningful conversations and explore the insights offered by these AI companions.
+
+## <a name="about">📜 About Us</a>
+
+**companion.ai** is a groundbreaking SaaS full-stack application that empowers users to create their very own AI companions and engage in meaningful conversations with them. With a user-friendly interface and cutting-edge AI models, the possibilities are endless.
+
 
 ## <a name="tech-stack">⚙️ Tech Stack</a>
 
