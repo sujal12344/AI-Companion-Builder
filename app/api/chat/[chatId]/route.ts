@@ -71,7 +71,7 @@ export async function POST(
     log("records", records);
 
     if (records.length === 0) {
-      const a = await memoryManager.seedChatHistory(
+      const a = await memoryManager?.seedChatHistory(
         companion.seed,
         "\n\n",
         companionKey
@@ -185,6 +185,6 @@ export async function POST(
     return new StreamingTextResponse(s);
   } catch (error) {
     console.log("[CHAT_POST]", error);
-    return new NextResponse("Internal Server", { status: 500 });
+    return new NextResponse(`Internal Server: ${error}`, { status: 500 });
   }
 }
