@@ -2,6 +2,8 @@ import SearchInput from "@/components/SearchInput";
 import Categories from "@/components/Categories";
 import prismadb from "@/lib/prismadb";
 import Companions from "@/components/Companions";
+import { Suspense } from "react";
+import CompanionSkeleton from "@/components/companionsSkeleton";
 
 interface rootPageProps {
   searchParams: {
@@ -36,7 +38,9 @@ const RootPage = async ({ searchParams }: rootPageProps) => {
     <div className="h-full p-4 space-y-2">
       <SearchInput />
       <Categories data={categories} />
-      <Companions data={data} />
+      <Suspense fallback={<CompanionSkeleton />}>
+        <Companions data={data} />
+      </Suspense>
     </div>
   );
 };

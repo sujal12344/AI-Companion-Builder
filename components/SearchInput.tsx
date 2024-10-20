@@ -7,11 +7,9 @@ import { useRouter, useSearchParams } from "next/navigation";
 
 import { Input } from "@/components/ui/input";
 import { useDebounce } from "@/hooks/useDebounce";
-import { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
 import queryString from "query-string";
 
 const SearchInput = () => {
-  // const router: AppRouterInstance = useRouter();
   const router = useRouter();
   const searchParams = useSearchParams();
 

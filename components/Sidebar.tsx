@@ -4,10 +4,17 @@ import { Home, Plus, Settings } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 
 import { cn } from "@/lib/utils";
+import { useProModal } from "@/hooks/useProModal";
 
-const Sidebar = () => {
+interface SidebarProps {
+  isPro: boolean;
+}
+
+const Sidebar = ({ isPro }: SidebarProps) => {
   const pathname = usePathname();
   const router = useRouter();
+
+  const proModal = useProModal();
 
   const routes = [
     {
@@ -20,7 +27,7 @@ const Sidebar = () => {
       icon: Plus,
       href: "/companion/new",
       label: "Create",
-      pro: true,
+      pro: !isPro,
     },
     {
       icon: Settings,
@@ -31,10 +38,9 @@ const Sidebar = () => {
   ];
 
   const onNavigate = (url: string, pro: boolean) => {
-    // check if user is protected or not
-    // if (!pro) {
-    //   return;
-    // }
+    if (pro && !isPro) {
+      return proModal.onOpen();
+    }
 
     // navigate to the url
     router.push(url);

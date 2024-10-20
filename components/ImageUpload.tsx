@@ -33,6 +33,7 @@ const ImageUpload = ({ value, onChange, disabled }: ImageUploadProps) => {
               alt="upload"
               src={value || "/placeholder.svg"}
               className="rounded-lg object-cover"
+              // height={160} // Removed height property
             />
           </div>
         </div>

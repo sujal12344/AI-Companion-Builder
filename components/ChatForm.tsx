@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 
 interface ChatFormProps {
   input: string;
-  handleInputChange: (
+  onChange: (
     e: ChangeEvent<HTMLInputElement> | ChangeEvent<HTMLTextAreaElement>
   ) => void;
   onSubmit: (
@@ -19,7 +19,7 @@ interface ChatFormProps {
 
 export const ChatForm = ({
   input,
-  handleInputChange,
+  onChange,
   onSubmit,
   isLoading,
 }: ChatFormProps) => {
@@ -31,7 +31,7 @@ export const ChatForm = ({
       <Input
         disabled={isLoading}
         value={input}
-        onChange={handleInputChange}
+        onChange={onChange}
         placeholder="Type a message..."
         className="bg-primary/10 rounded-lg"
       ></Input>

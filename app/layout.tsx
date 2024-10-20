@@ -5,6 +5,7 @@ import { ClerkProvider } from "@clerk/nextjs";
 import { ThemeProvider } from "@/components/theme-provider";
 import { cn } from "@/lib/utils";
 import { Toaster } from "@/components/ui/toaster";
+import { ProModal } from "@/components/ProModal";
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -24,14 +25,14 @@ export default function RootLayout({
 }>) {
   return (
     <ClerkProvider>
-      {/* <html lang="en" suppressHydrationWarning> */}
-      <html lang="en">
-        <body className={cn(`bg-black`, poppins.className)}>
+      <html lang="en" suppressHydrationWarning>
+        <body className={cn(`bg-secondary`, poppins.className)}>
           <ThemeProvider
             attribute="class"
             defaultTheme="system"
             enableSystem={true}
           >
+            <ProModal />
             {children}
             <Toaster />
           </ThemeProvider>

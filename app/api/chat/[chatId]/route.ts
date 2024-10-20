@@ -8,7 +8,6 @@ import { MemoryManager } from "@/lib/memory";
 import { rateLimit } from "@/lib/rateLimit";
 import { Replicate } from "langchain/llms/replicate";
 import { CallbackManager } from "langchain/callbacks";
-import { log } from "console";
 
 export async function POST(
   request: Request,
@@ -17,8 +16,10 @@ export async function POST(
   try {
     const { prompt } = await request.json(); //like in Express req.body
     const user = await currentUser();
-    console.log("prompt", prompt);
-    console.log("user", user);
+    // console.log("prompt", prompt);
+    // console.log("user", user);
+    // console.log("user.firstName", user?.firstName);
+    // console.log("user.id", user?.id);
 
     if (!user || !user.firstName || !user.id) {
       return new NextResponse("Unauthorized", { status: 401 });
@@ -62,56 +63,52 @@ export async function POST(
       userId: user.id,
       modelName: "llama2-13b", //from we changed to another model
     };
-    log("companionKey", companionKey);
+    console.log("companionKey", companionKey);
 
-    const memoryManager = await MemoryManager.getInstance(); //get the instance of MemoryManager
-    log("memoryManager", memoryManager);
+    const memoryManager = await MemoryManager.getInstance();
 
     const records = await memoryManager.readLatestHistory(companionKey); //get the latest history
-    log("records", records);
+    console.log("records", records); //give all 30 latest messages according to latest time
 
-    if (records.length === 0) {
+    if (records.length === 0 || records === '') {
       const a = await memoryManager?.seedChatHistory(
         companion.seed,
         "\n\n",
         companionKey
-      ); //seed the chat history
-      log("a", a);
+      ); //strating me agar kuch nahi hai toh instruction daal rhe hai
+      console.log("a", a);
     }
 
     await memoryManager.writeToHistory("User:" + prompt + `\n`, companionKey); //write the user message to history
-    log("writeToHistory", "User:" + prompt + `\n`);
 
     // Query Pinecone
     const recentChatHistory = await memoryManager.readLatestHistory(
       companionKey
-    ); //get the latest history
-    log("recentChatHistory", recentChatHistory);
+    ); //give all 30 latest messages according to latest time
 
     const similarDocs = await memoryManager.vectorSearch(
       recentChatHistory,
       companion_file_name
-    ); //calling the vector search with the parameter recentChatHistory and companion_file_name
-    console.log("recentChatHistory", recentChatHistory);
-    log("companion_file_name", companion_file_name);
-    log("similarDocs", similarDocs);
+    );
+    console.log("companion_file_name", companion_file_name);
+    console.log("similarDocs", similarDocs);
 
     let relevantHistory = "";
 
     if (!!similarDocs && similarDocs.length !== 0) {
       relevantHistory = similarDocs
         .map((doc) => {
-          log("doc", doc);
-          log("doc.pageContent", doc.pageContent);
+          console.log("doc", doc);
+          console.log("doc.pageContent", doc.pageContent);
           return doc.pageContent;
         })
         .join("\n"); //get the relevant history
-      log("similarDocs", similarDocs);
-      log("relevantHistory", relevantHistory);
+      console.log("similarDocs", similarDocs);
+      console.log("relevantHistory", relevantHistory);
     }
 
-    const { handlers } = LangChainStream(); //get the handlers
-    log("handlers", handlers);
+    const { handlers } = LangChainStream(); //ye real-time-streaming ke liye kaam aata hai like jaise youtube video ek baar me load nahi hota vaisa
+    // log("handlers", handlers);
 
     // Call Replicate for inference
     const model = new Replicate({
@@ -122,43 +119,48 @@ export async function POST(
         // max_length: 4096,
       },
       apiKey: process.env.REPLICATE_API_TOKEN,
-      callbackManager: CallbackManager.fromHandlers(handlers), //pass the handlers to the callbackManager
+      callbackManager: CallbackManager.fromHandlers(handlers),
+      //ye event handlers hai jo events manage karata hai during
     });
-    log("model", model);
+    // log("model", model);
 
     // Turn verbose on for debugging
-    model.verbose = true;
-    const message = `
-                      ONLY generate plain sentences without prefix of who is speaking. DO NOT use ${companion.name}: prefix. 
+    model.verbose = true; //Its only for debugging purpose
 
-                      ${companion.instructions}
+    const response = String(
+      await model
+        .call(
+          `
+        ONLY generate plain sentences without prefix of who is speaking. DO NOT use ${companion.name}: prefix. 
 
-                      Below are the relevant details about ${companion.name}'s past and the conversation you are in.
-                      ${relevantHistory}
+        ${companion.instructions}
+
+        Below are the relevant details about ${companion.name}'s past and the conversation you are in.
+        ${relevantHistory}
 
 
-                      ${recentChatHistory}\n${companion.name}:`;
-    log("message", message);
-
-    const response = String(await model.call(message).catch(console.error));
-    log("response", response);
+        ${recentChatHistory}\n${companion.name}:`
+        )
+        .catch(console.error)
+    );
+    console.log("response", response);
 
     const cleaned = response?.replaceAll(",", ""); //clean the response like [Then, you, can, do, this] to [Then you can do this]
-    log("cleaned", cleaned);
+    console.log("cleaned", cleaned);
     const chunks = cleaned?.split("\n"); //split the response by new line
-    log("chunks", chunks);
+    console.log("chunks", chunks);
     const responseBody = chunks?.[0]; //youtube video me usne responseBody ko response liya hai
-    log("responseBody", responseBody);
+    console.log("responseBody", responseBody);
     await memoryManager.writeToHistory("" + responseBody?.trim(), companionKey); //write the response to history
-    log("writeToHistory", "" + responseBody?.trim());
+    console.log("writeToHistory", "" + responseBody?.trim());
     var Readable = require("stream").Readable; //import Readable from stream
-    log("Readable", Readable);
+    console.log("Readable", Readable);
 
     let s = new Readable();
-    log("s", s);
+    console.log("s", s);
     s.push(responseBody);
     s.push(null);
-    log("s", s);
+    console.log("s", s);
 
     if (responseBody && responseBody.length > 1) {
       await memoryManager.writeToHistory(

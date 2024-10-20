@@ -16,7 +16,12 @@ const CompanionFun = async ({ data }: CompanionProps) => {
       <div className="flex flex-col pt-10 items-center justify-center">
         {/* <div className="flex flex-col pt-10 items-center justify-center space-x-3"> */}
         <div className="relative w-60 h-60">
-          <Image fill alt="empty" className="grayscale" src="/empty.png" />
+          <Image
+            fill
+            alt="empty"
+            className="grayscale"
+            src="/empty.png"
+          />
         </div>
         <p className="text-sm text-muted-foreground">No companions found</p>
       </div>

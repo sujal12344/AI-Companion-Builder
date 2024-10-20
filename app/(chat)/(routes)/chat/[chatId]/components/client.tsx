@@ -24,21 +24,11 @@ export const ChatClient = ({ companion }: ChatClientProps) => {
     companion.messages
   );
 
-  const {
-    input,
-    isLoading,
-    setInput,
-    handleSubmit,
-    handleInputChange,
-    complete,
-    data,
-    completion,
-    error,
-    setCompletion,
-    stop,
-  } = useCompletion({
+  const { input, isLoading, setInput, handleSubmit, handleInputChange} = useCompletion({
     api: `/api/chat/${companion.id}`,
     onFinish(prompt, completion) {
+      console.log(`prompt`, prompt, `completion`, completion);
+
       const systemMessage: ChatMessageProps = {
         role: "system",
         content: completion,
@@ -50,22 +40,8 @@ export const ChatClient = ({ companion }: ChatClientProps) => {
     },
   });
 
-  console.log(`all useCompletion element:`);
-  console.log({
-    input,
-    isLoading,
-    setInput,
-    handleSubmit,
-    handleInputChange,
-    complete,
-    data,
-    completion,
-    error,
-    setCompletion,
-    stop,
-  });
-
   const onSubmit = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
     const userMessage: ChatMessageProps = {
       role: "user",
       content: input,
@@ -85,7 +61,7 @@ export const ChatClient = ({ companion }: ChatClientProps) => {
       <ChatForm
         isLoading={isLoading}
         input={input}
-        handleInputChange={handleInputChange}
+        onChange={handleInputChange}
         onSubmit={onSubmit}
       />
     </div>
