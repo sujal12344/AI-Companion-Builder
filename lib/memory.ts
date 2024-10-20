@@ -2,7 +2,6 @@ import { Redis as RedisClient } from "@upstash/redis";
 import { OpenAIEmbeddings } from "langchain/embeddings/openai";
 import { PineconeStore } from "langchain/vectorstores/pinecone";
 import { PineconeClient } from "@pinecone-database/pinecone";
-import { log } from "console";
 import { OpenAI } from "openai";
 
 export type CompanionKey = {
@@ -27,6 +26,7 @@ export class MemoryManager {
         await this.vectorDBClient.init({
           apiKey: process.env.PINECONE_API_KEY!,
           environment: process.env.PINECONE_ENVIRONMENT!,
+          // projectName: process.env.PINECONE_INDEX!,
         });
 
         if (!process.env.PINECONE_INDEX) {
@@ -53,9 +53,11 @@ export class MemoryManager {
     companionFileName: string
   ) {
     const pineconeClient = <PineconeClient>this.vectorDBClient;
+    console.log("pineconeClient", pineconeClient);
 
+    pineconeClient.projectName = process.env.PINECONE_INDEX!;
     const pineconeIndex = pineconeClient.Index(process.env.PINECONE_INDEX!);
-    // console.log("pineconeIndex", pineconeIndex);
+    console.log("pineconeIndex", pineconeIndex);
 
     const vectorStore = await PineconeStore.fromExistingIndex(
       new OpenAIEmbeddings({
@@ -68,7 +70,7 @@ export class MemoryManager {
     ); //based on OpenAIEmbeddings instanse and pineconeIndex creating vectorStore instance
 
     // new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-    // console.log("vectorStore", vectorStore);
+    console.log("vectorStore", vectorStore);
     // console.log("OpenAIEmbeddings", OpenAIEmbeddings);
 
     const similarSearch = await vectorStore
@@ -98,7 +100,7 @@ export class MemoryManager {
   }
 
   public async writeToHistory(text: string, companionKey: CompanionKey) {
-    // console.log("writeToHistoryProps", text, companionKey);
+    console.log("writeToHistoryProps", text, companionKey);
 
     if (!companionKey || typeof companionKey.userId == "undefined") {
       console.log("Companion key set incorrectly");
@@ -106,12 +108,12 @@ export class MemoryManager {
     }
 
     const key = this.generateRedisClientCompanionKey(companionKey);
-    // log("key", key);
+    console.log("key", key);
     const result = await this.RedisDBhistory.zadd(key, {
       score: Date.now(),
       member: text,
     });
-    log("result", result);
+    console.log("result", result);
 
     return result;
   }
@@ -126,13 +128,14 @@ export class MemoryManager {
     let result = await this.RedisDBhistory.zrange(key, 0, Date.now(), {
       byScore: true,
     });
+    console.log("working", result);
     //zrange returns the elements with the lowest scores, here we are getting the latest 30 messages from today to last 30 messages
     // log("resultBefore", result);
 
     result = result.slice(-30).reverse();
     const recentChats = result.reverse().join("\n");
-    // log("recentChats", recentChats);
-    // log("resultAfter", result);
+    console.log("recentChats", recentChats);
+    console.log("resultAfter", result);
     return recentChats;
   }
 
@@ -141,20 +144,20 @@ export class MemoryManager {
     delimiter: string = "\n",
     companionKey: CompanionKey
   ) {
-    // log("seedChatHistoryProps", seedContent, delimiter, companionKey);
+    console.log("seedChatHistoryProps", seedContent, delimiter, companionKey);
     const key = this.generateRedisClientCompanionKey(companionKey);
-    // log("key", key);
+    console.log("key", key);
     if (await this.RedisDBhistory.exists(key)) {
       console.log("User already has chat history");
       return;
     }
-    log(
+    console.log(
       "await this.RedisDBhistory.exists(key)",
       await this.RedisDBhistory.exists(key)
     );
 
     const content = seedContent.split(delimiter);
-    log("content", content);
+    console.log("content", content);
     let counter = 0;
     for (const line of content) {
       await this.RedisDBhistory.zadd(key, { score: counter, member: line });
