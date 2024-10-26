@@ -5,7 +5,7 @@ import { Companion, Message } from "@prisma/client";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { useCompletion } from "ai/react";
-import { ChatForm } from "@/components/ChatForm";
+import { PlaceholdersAndVanishInput } from "@/components/ui/placeholders-and-vanish-input";
 import { ChatMessages } from "@/components/ChatMessages";
 import { ChatMessageProps } from "@/components/ChatMessage";
 
@@ -50,6 +50,14 @@ export const ChatClient = ({ companion }: ChatClientProps) => {
     handleSubmit(e);
   };
 
+  const placeholders = [
+    "What's the first rule of Fight Club?",
+    "Who is Tyler Durden?",
+    "Where is Andrew Laeddis Hiding?",
+    "Write a Javascript method to reverse a string",
+    "How to assemble your own PC?",
+  ];
+
   return (
     <div className="flex flex-col h-full p-4 space-y-2">
       <ChatHeader companion={companion} />
@@ -58,11 +66,12 @@ export const ChatClient = ({ companion }: ChatClientProps) => {
         isLoading={isLoading}
         messages={messages}
       />
-      <ChatForm
-        isLoading={isLoading}
-        input={input}
+      <PlaceholdersAndVanishInput
+        placeholders={placeholders}
         onChange={handleInputChange}
         onSubmit={onSubmit}
+        disabled={isLoading}
+        inputValue={input}
       />
     </div>
   );
