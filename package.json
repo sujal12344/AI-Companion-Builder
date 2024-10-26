@@ -27,6 +27,7 @@
     "axios": "^1.7.3",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
+    "framer-motion": "^11.11.10",
     "langchain": "^0.0.153",
     "lucide-react": "^0.417.0",
     "next": "14.2.5",
@@ -41,7 +42,8 @@
     "react-spinners": "^0.14.1",
     "replicate": "^0.18.1",
     "stripe": "^17.2.0",
-    "tailwind-merge": "^2.4.0",
+    "svelte": "^3.59.2",
+    "tailwind-merge": "^2.5.4",
     "tailwindcss-animate": "^1.0.7",
     "zod": "^3.23.8",
     "zustand": "^5.0.0"
