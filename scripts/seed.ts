@@ -14,7 +14,7 @@ async function main() {
         { name: "Sports & Games" },
         { name: "Anime" },
         { name: "Artist" },
-        { name: "Blogger or Content creator" },
+        // { name: "Blogger or Content creator" },
         { name: "Animal" },
       ],
     });
