@@ -3,6 +3,8 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "./select";
+import { ChatMessageProps } from "../ChatMessage";
 
 export function PlaceholdersAndVanishInput({
   placeholders,
@@ -11,6 +13,7 @@ export function PlaceholdersAndVanishInput({
   disabled,
   inputValue,
   className,
+  getTone,
 }: {
   placeholders: string[];
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -18,6 +21,7 @@ export function PlaceholdersAndVanishInput({
   disabled?: boolean;
   inputValue?: string;
   className?: string;
+  getTone?: (tone: ChatMessageProps["tone"]) => void;
 }) {
   const [currentPlaceholder, setCurrentPlaceholder] = useState(0);
 
@@ -50,6 +54,13 @@ export function PlaceholdersAndVanishInput({
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [placeholders]);
+
+  const setTone = (tone: ChatMessageProps["tone"]) => {
+    // Call the getTone function passed from the parent
+    if (getTone) {
+      getTone(tone);
+    }
+  };
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const newDataRef = useRef<any[]>([]);
@@ -211,13 +222,31 @@ export function PlaceholdersAndVanishInput({
         value={value}
         type="text"
         className={cn(
-          "w-full relative text-sm sm:text-base z-50 border-none dark:text-white bg-transparent text-black h-full rounded-full focus:outline-none focus:ring-0 pl-4 sm:pl-10 pr-20",
+          "w-full relative text-sm sm:text-base z-50 border-none dark:text-white bg-transparent text-black h-full rounded-full focus:outline-none focus:ring-0 pl-4 sm:pl-10 pr-20 disabled:cursor-not-allowed",
           animating && "text-transparent dark:text-transparent"
         )}
         title={placeholders[currentPlaceholder]}
         disabled={disabled}
         onFocus={() => inputRef.current?.focus()}
       />
+
+      <Select onValueChange={(value) => {
+          setTone(value as ChatMessageProps["tone"])
+          getTone && getTone(value as ChatMessageProps["tone"])
+        }}>
+        <SelectTrigger className="absolute right-12 top-1/2 z-50 -translate-y-1/2 w-[180px]">
+          <SelectValue placeholder="Select the tone"/>
+        </SelectTrigger>
+        <SelectContent>
+          <SelectGroup>
+            <SelectItem value="genuine" onClick={() => setTone("genuine")}>Genuine</SelectItem>
+            <SelectItem value="casual" onClick={() => setTone("casual")}>Casual</SelectItem>
+            <SelectItem value="sympathetic" onClick={() => setTone("sympathetic")}>Sympathetic</SelectItem>
+            <SelectItem value="critical" onClick={() => setTone("critical")}>Critical</SelectItem>
+            <SelectItem value="professional" onClick={() => setTone("professional")}>Professional</SelectItem>
+          </SelectGroup>
+        </SelectContent>
+      </Select>
 
       <button
         disabled={!value}

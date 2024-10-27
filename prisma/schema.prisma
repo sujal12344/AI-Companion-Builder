@@ -43,10 +43,20 @@ enum Role {
   system
 }
 
+enum Tone {
+  genuine
+  sympathetic
+  professional
+  casual
+  critical
+  humorous
+}
+
 model Message {
   id        String   @id @default(uuid())
   role      Role
   content   String   @db.Text
+  tone      Tone?
   created   DateTime @default(now())
   updatedAt DateTime @updatedAt
 

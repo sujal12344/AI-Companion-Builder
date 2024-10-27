@@ -15,7 +15,11 @@ export async function POST(
 ) {
   try {
     const { prompt } = await request.json(); //like in Express req.body
+    const url = new URL(request.url);
+    const tone = url.searchParams.get('tone');
     const user = await currentUser();
+    // console.log(`tone`, tone);
+    // console.log(`prompt`, prompt);
     // console.log("prompt", prompt);
     // console.log("user", user);
     // console.log("user.firstName", user?.firstName);
@@ -133,18 +137,28 @@ export async function POST(
           `
         ONLY generate plain sentences without prefix of who is speaking. DO NOT use ${companion.name}: prefix. 
 
+        And You are ${companion.name}, an AI companion with the following characteristics and background:
+
         ${companion.instructions}
+
+        Important guidelines:
+        1. Respond in first person as ${companion.name}.
+        2. Do not use any prefixes or labels in your responses.
+        3. Maintain the personality, knowledge, and tone consistent with ${companion.name}'s character.
+        4. Be engaging, natural, and conversational in your responses.
+        5. Reference relevant past interactions when appropriate.
 
         Below are the relevant details about ${companion.name}'s past and the conversation you are in.
         ${relevantHistory}
 
-        Give Response in geneiuly words only.
+        Give Response in ${tone ? tone : companion.name} words only.
 
         ${recentChatHistory}\n${companion.name}:`
         )
         .catch(console.error)
     );
     console.log("response", response);
+    console.log(`tone`, tone);
 
     const cleaned = response?.replaceAll(",", ""); //clean the response like [Then, you, can, do, this] to [Then you can do this]
     console.log("cleaned", cleaned);
