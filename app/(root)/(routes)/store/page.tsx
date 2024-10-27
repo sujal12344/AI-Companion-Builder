@@ -17,14 +17,14 @@ const StorePage = async ({ searchParams }: rootPageProps) => {
   const user = await currentUser();
   const data = await prismadb.companion.findMany({
     where: {
-      // categoryId: searchParams.categoryId,
-      // name: {
-      //   search: searchParams.name,
-      // },
+      categoryId: searchParams.categoryId,
+      name: {
+        search: searchParams.name,
+      },
       userId: user?.id,
     },
     orderBy: {
-      createdAt: "desc",
+      createdAt: "asc",
     },
     include: {
       _count: {
