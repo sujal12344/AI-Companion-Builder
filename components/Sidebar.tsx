@@ -55,7 +55,7 @@ const Sidebar = ({ isPro }: SidebarProps) => {
               onClick={() => onNavigate(route.href, route.pro)}
               key={route.href}
               className={cn(
-                "text-muted-foreground text-xs group flex p-3 w-full justify-start font-medium cursor-pointer hover:text-primary hover:bg-primary/10 rounded-lg transition",
+                "text-muted-foreground text-xs group flex p-3 md:px-2 w-full justify-start font-medium cursor-pointer hover:text-primary hover:bg-primary/10 rounded-lg transition",
                 pathname === route.href && "bg-primary/10 text-primary"
               )}
             >

@@ -138,6 +138,7 @@ export async function POST(
         Below are the relevant details about ${companion.name}'s past and the conversation you are in.
         ${relevantHistory}
 
+        Give Response in geneiuly words only.
 
         ${recentChatHistory}\n${companion.name}:`
         )

@@ -26,7 +26,7 @@ export default function RootLayout({
   return (
     <ClerkProvider>
       <html lang="en" suppressHydrationWarning>
-        <body className={cn(`bg-secondary`, poppins.className)}>
+        <body className={cn(`dark:bg-black bg-white`, poppins.className)}>
           <ThemeProvider
             attribute="class"
             defaultTheme="system"
