@@ -23,10 +23,13 @@ export class MemoryManager {
   public async init() {
     if (this.vectorDBClient instanceof PineconeClient) {
       try {
+        // console.log("PINECONE_API_KEY:", process.env.PINECONE_API_KEY);
+        // console.log("PINECONE_ENVIRONMENT:", process.env.PINECONE_ENVIRONMENT);
+        // console.log("PINECONE_INDEX:", process.env.PINECONE_INDEX);
+        this.vectorDBClient.projectName = process.env.PINECONE_INDEX!;
         await this.vectorDBClient.init({
           apiKey: process.env.PINECONE_API_KEY!,
           environment: process.env.PINECONE_ENVIRONMENT!,
-          // projectName: process.env.PINECONE_INDEX!,
         });
 
         if (!process.env.PINECONE_INDEX) {
@@ -56,6 +59,7 @@ export class MemoryManager {
     console.log("pineconeClient", pineconeClient);
 
     pineconeClient.projectName = process.env.PINECONE_INDEX!;
+    this.vectorDBClient.projectName = process.env.PINECONE_INDEX!;
     const pineconeIndex = pineconeClient.Index(process.env.PINECONE_INDEX!);
     console.log("pineconeIndex", pineconeIndex);
 
@@ -77,6 +81,8 @@ export class MemoryManager {
       .similaritySearch(recentChatHistory, 3, { fileName: companionFileName })
       .catch((err: any) => {
         console.log("WARNING: failed to get vector search results.", err);
+        console.log("OpenAI_API_KEY", process.env.OPENAI_API_KEY);
+        console.log("err.message", err?.message);
       });
     console.log("similarDocs", similarSearch);
 
