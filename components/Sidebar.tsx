@@ -1,6 +1,6 @@
 "use client";
 
-import { Home, Plus, Settings } from "lucide-react";
+import { Home, Plus, Settings, Store } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 
 import { cn } from "@/lib/utils";
@@ -35,6 +35,12 @@ const Sidebar = ({ isPro }: SidebarProps) => {
       label: "Settings",
       pro: false,
     },
+    {
+      icon: Store,
+      href: "/store",
+      label: "Store",
+      pro: !isPro,
+    }
   ];
 
   const onNavigate = (url: string, pro: boolean) => {

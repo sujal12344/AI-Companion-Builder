@@ -6,7 +6,9 @@ import Stripe from "stripe";
 
 export async function POST(req: Request) {
   const body = await req.text();
+  console.log(body);
   const signature = headers().get("Stripe-Signature") as string;
+  console.log(signature);
 
   let event: Stripe.Event;
 
@@ -16,6 +18,7 @@ export async function POST(req: Request) {
       signature,
       process.env.STRIPE_WEBHOOK_SECRET!
     );
+    console.log(event);
   } catch (error: any) {
     return new NextResponse(`Webhook Error: ${error?.message}`, {
       status: 400,
@@ -23,12 +26,14 @@ export async function POST(req: Request) {
   }
 
   const session = event.data.object as Stripe.Checkout.Session;
+  console.log(session);
 
   if (event.type === "checkout.session.completed") {
+    console.log("checkout.session.completed");
     const subscription = await stripe.subscriptions.retrieve(
       session.subscription as string
     );
-
+    console.log(subscription);
     if (!session?.metadata?.userId) {
       return new NextResponse("User id is required", { status: 400 });
     }
@@ -44,6 +49,7 @@ export async function POST(req: Request) {
         ),
       },
     });
+    console.log("userSubscription created");
   }
 
   if (event.type === "invoice.payment_succeeded") {
