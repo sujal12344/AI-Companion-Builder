@@ -67,7 +67,7 @@ const ChatHeader = ({ companion }: ChatHeaderProps) => {
             </div>
           </div>
           <p className="text-xs text-muted-foreground">
-            created by {companion.userName}
+            created by <span className="text-[13px] font-semibold">{companion.userName}</span>
           </p>
         </div>
       </div>

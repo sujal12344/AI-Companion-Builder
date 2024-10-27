@@ -43,7 +43,7 @@ const CompanionCard = ({ item }: CompanionCardProps) => {
           <p className="text-sm">{item.description}</p>
         </CardHeader>
         <CardFooter className="flex items-center text-xs justify-between text-muted-foreground">
-          <p>@{item.userName}</p>
+          <p className="font-semibold">@{item.userName}</p>
           <div className="flex items-center">
             <MessageSquare className="w-4 h-4 mr-1" />
             {item._count.messages}

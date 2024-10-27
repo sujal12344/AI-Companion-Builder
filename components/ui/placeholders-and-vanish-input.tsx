@@ -53,7 +53,7 @@ export function PlaceholdersAndVanishInput({
       }
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [placeholders]);
+  }, [placeholders, handleVisibilityChange, startAnimation]);
 
   const setTone = (tone: ChatMessageProps["tone"]) => {
     // Call the getTone function passed from the parent

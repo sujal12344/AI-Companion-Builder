@@ -42,7 +42,6 @@ export const ChatClient = ({ companion }: ChatClientProps) => {
 
       router.refresh();
     },
-    initialCompletion: companion.messages[0].content,
   });
 
   const onSubmit = (e: FormEvent<HTMLFormElement>) => {

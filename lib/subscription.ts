@@ -5,7 +5,7 @@ const DAY_IN_MS = 24 * 60 * 60 * 1000; //86_400_000
 
 export const checkSubscription = async () => {
   const { userId } = auth();
-  // console.log("userId", userId);
+  console.log("userId", userId);
 
   if (!userId) {
     return false;
@@ -21,7 +21,7 @@ export const checkSubscription = async () => {
       stripeSubscriptionId: true,
     },
   });
-  // console.log("userSubscription", userSubscription);
+  console.log("userSubscription", userSubscription);
   if (!userSubscription) {
     return false;
   }
