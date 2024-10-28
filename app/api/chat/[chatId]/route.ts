@@ -141,6 +141,12 @@ export async function POST(
 
         You have ability to think and feel like a real person and respond like them.
 
+        ${tone && 
+        `Give response in ${tone} words(tone) only.
+
+        Below is the instructions for you:
+        ` }
+
         ${companion.instructions}
 
         Below are the relevant details about ${companion.name}'s past and the conversation you are in.
