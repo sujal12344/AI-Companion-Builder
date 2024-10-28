@@ -30,8 +30,8 @@ const SettingPage = async () => {
       <h3 className="text-lg font-medium">Settings</h3>
       <div className="text-muted-foreground text-sm mb-4">
         {isPro
-          ? <span>You are currently on a <span className="text-base font-semibold text-blue-500">Pro</span> plan</span>
-          : <span>You are currently on a <span className="text-base font-semibold text-blue-500">FREE</span> plan</span>}
+          ? <span>You are currently on a <span className="text-[18px] font-semibold text-blue-500 mx-1"> Pro </span> plan</span>
+          : <span>You are currently on a <span className="text-[18px] font-semibold text-blue-500 mx-1"> FREE </span> plan</span>}
       </div>
       <h4 className="text-md font-semibold mt-4 mb-1">Features:</h4>
       <table className="min-w-full border-collapse border border-gray-800 mb-6">

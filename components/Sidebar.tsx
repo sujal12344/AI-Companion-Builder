@@ -38,7 +38,7 @@ const Sidebar = ({ isPro }: SidebarProps) => {
     {
       icon: Store,
       href: "/store",
-      label: "Store",
+      label: "MyStore",
       pro: !isPro,
     }
   ];
