@@ -48,7 +48,7 @@ export const ChatMessage = ({
         role === "user" && "justify-end"
       )}
     >
-      {role !== "user" && src && <BotAvatar src={src!} />}
+      {role !== "user" && src && <BotAvatar src={src!} alt="bot avatar" />}
       <div className="bg-primary/20 px-4 py-2 rounded-md max-w-sm text-sm">
         {isLoading ? (
           <BeatLoader
@@ -60,13 +60,14 @@ export const ChatMessage = ({
           content
         )}
       </div>
-      {role === "user" && <UserAvatar />}
+      {role === "user" && <UserAvatar alt="user avatar" />}
       {role !== "user" && !isLoading && (
         <Button
           className="opacity-0 group-hover:opacity-100 transition"
           size={"icon"}
           variant={"ghost"}
           onClick={onCopy}
+          title="Copy"
         >
           <Copy className="w-4 h-4" />
         </Button>

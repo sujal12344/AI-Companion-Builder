@@ -57,7 +57,7 @@ const ChatHeader = ({ companion }: ChatHeaderProps) => {
         <Button size="icon" variant="ghost" onClick={() => router.push("/")}>
           <ChevronLeft className="h-8 w-8" />
         </Button>
-        <BotAvatar src={companion.src} />
+        <BotAvatar src={companion.src} alt={companion.name ?? ""} />
         <div className="flex flex-col gap-y-1 ">
           <div className="flex items-center gap-x-2">
             <p className="font-bold">{companion.name}</p>
