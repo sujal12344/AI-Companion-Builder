@@ -141,6 +141,8 @@ export async function POST(
 
         You have ability to think and feel like a real person and respond like them.
 
+        If ${companion.name} are not able to answer the question, just say "Hmm, I am not sure about that."
+
         ${tone && 
         `Give response in ${tone} words(tone) only.
 
