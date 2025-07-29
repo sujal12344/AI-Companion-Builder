@@ -16,7 +16,7 @@ const ErrorFallback = ({ error, resetErrorBoundary }: { error: Error; resetError
     </div>
     <h2 className="text-2xl font-bold text-primary mb-3">AI Companion Error</h2>
     <p className="text-muted-foreground mb-6 max-w-md leading-relaxed">
-      Our AI companion encountered an unexpected issue. Don't worry, we can get back on track.
+      Our AI companion encountered an unexpected issue. Don&apos;t worry, we can get back on track.
     </p>
     <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4 mb-6 max-w-md">
       <p className="text-sm text-destructive font-mono">{error.message}</p>
@@ -73,7 +73,7 @@ const ContentErrorFallback = ({ error, resetErrorBoundary }: { error: Error; res
     </div>
     <h3 className="text-xl font-semibold text-primary mb-3">Content Loading Failed</h3>
     <p className="text-muted-foreground mb-4 max-w-sm">
-      We're having trouble loading this content. Let's try again.
+      We&apos;re having trouble loading this content. Let&apos;s try again.
     </p>
     <div className="bg-muted/50 border border-border rounded-lg p-3 mb-6 max-w-sm">
       <p className="text-xs text-muted-foreground font-mono">{error.message}</p>
@@ -96,7 +96,7 @@ const CompanionErrorFallback = ({ resetErrorBoundary }: { error: Error; resetErr
     </div>
     <h3 className="text-xl font-semibold text-primary mb-3">Companion Loading Failed</h3>
     <p className="text-muted-foreground mb-4 max-w-sm">
-      We're having trouble loading this content. Let's try again.
+      We&apos;re having trouble loading this content. Let&apos;s try again.
     </p>
     <button
       onClick={resetErrorBoundary}
