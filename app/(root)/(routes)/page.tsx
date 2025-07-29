@@ -20,26 +20,41 @@ interface rootPageProps {
 
 const RootPage = async ({ searchParams }: rootPageProps) => {
   try {
-    const data = await prismadb.companion.findMany({
-      where: {
-        categoryId: searchParams.categoryId,
-        name: {
-          search: searchParams.name,
+    // Build the where clause more efficiently
+    const whereClause: any = {};
+
+    if (searchParams.categoryId) {
+      whereClause.categoryId = searchParams.categoryId;
+    }
+
+    if (searchParams.name) {
+      whereClause.name = {
+        search: searchParams.name,
+      };
+    }
+
+    // Run both queries in parallel for better performance
+    const [data, categories] = await Promise.all([
+      prismadb.companion.findMany({
+        where: whereClause,
+        orderBy: {
+          createdAt: "desc", // Changed to desc for newest first
         },
-      },
-      orderBy: {
-        createdAt: "asc",
-      },
-      include: {
-        _count: {
-          select: {
-            messages: true,
+        include: {
+          _count: {
+            select: {
+              messages: true,
+            },
           },
         },
-      },
-    });
-
-    const categories = await prismadb.category.findMany();
+        take: 50, // Limit results for better performance
+      }),
+      prismadb.category.findMany({
+        orderBy: {
+          name: "asc",
+        },
+      }),
+    ]);
 
     return (
       <div className="p-4 space-y-2">
