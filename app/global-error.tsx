@@ -21,7 +21,7 @@ export default function GlobalError({
           </div>
           <h2 className="text-2xl font-bold mb-3">AI Companion Error</h2>
           <p className="text-gray-300 mb-6 max-w-md leading-relaxed">
-            Our AI companion encountered an unexpected issue. Don't worry, we can get back on track.
+            Our AI companion encountered an unexpected issue. Don&apos;t worry, we can get back on track.
           </p>
           <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 mb-6 max-w-md">
             <p className="text-sm text-red-400 font-mono">{error.message}</p>
