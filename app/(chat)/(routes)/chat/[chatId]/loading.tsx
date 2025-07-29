@@ -25,8 +25,8 @@ const ChatSkeleton = () => {
                 <div className="flex">
                     <Avatar width={12} height={12} />
                     <div className="flex flex-col gap-2 ml-2 mt-2">
-                        <div className="h-2 w-40 bg-gray-200 rounded-sm dark:bg-gray-700 "></div>
-                        <div className="h-2 w-32 bg-gray-200 rounded-sm dark:bg-gray-700 "></div>
+                        <div className="h-2 w-40 bg-gray-200 rounded-sm dark:bg-gray-700 " />
+                        <div className="h-2 w-32 bg-gray-200 rounded-sm dark:bg-gray-700 " />
 
                     </div>
                 </div>
@@ -37,7 +37,7 @@ const ChatSkeleton = () => {
                         <div className={cn("flex gap-2", `${!isEvenNumber(index) && "justify-end"}`)}>
                             {isEvenNumber(index) &&
                                 <Avatar width={10} height={10} />}
-                            <div className="h-8 w-1/2 ml-2 mt-1 bg-gray-200 rounded-sm dark:bg-gray-700 "></div>
+                            <div className="h-8 w-1/2 ml-2 mt-1 bg-gray-200 rounded-sm dark:bg-gray-700 " />
                             {!isEvenNumber(index) &&
                                 <Avatar width={10} height={10} />}
                         </div>
@@ -45,8 +45,8 @@ const ChatSkeleton = () => {
                 ))}
             </div>
             <div className="w-full  gap-4 border-t border-primary/10 py-4 flex gap-x-2 items-center">
-                <div className="h-10 flex-1 bg-gray-200 rounded-sm dark:bg-gray-700 "></div>
-                <div className="h-10 w-12 bg-gray-200 rounded-sm dark:bg-gray-700 "></div>
+                <div className="h-10 flex-1 bg-gray-200 rounded-sm dark:bg-gray-700 " />
+                <div className="h-10 w-12 bg-gray-200 rounded-sm dark:bg-gray-700 " />
             </div>
         </div>
     );
