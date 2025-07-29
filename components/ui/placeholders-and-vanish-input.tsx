@@ -3,7 +3,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
-import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "./select";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "./select";
 import { ChatMessageProps } from "../ChatMessage";
 
 export function PlaceholdersAndVanishInput({
@@ -26,24 +26,26 @@ export function PlaceholdersAndVanishInput({
   const [currentPlaceholder, setCurrentPlaceholder] = useState(0);
 
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  const startAnimation = () => {
+
+  const startAnimation = useCallback(() => {
     intervalRef.current = setInterval(() => {
       setCurrentPlaceholder((prev) => (prev + 1) % placeholders.length);
     }, 3000);
-  };
-  const handleVisibilityChange = () => {
+  }, [placeholders.length]);
+
+  const handleVisibilityChange = useCallback(() => {
     if (document.visibilityState !== "visible" && intervalRef.current) {
       clearInterval(intervalRef.current); // Clear the interval when the tab is not visible
       intervalRef.current = null;
     } else if (document.visibilityState === "visible") {
       startAnimation(); // Restart the interval when the tab becomes visible
     }
-  };
+  }, [startAnimation]);
 
   useEffect(() => {
     startAnimation();
     document.addEventListener("visibilitychange", handleVisibilityChange);
-    
+
     // Automatically focus the input when the component mounts
     inputRef.current?.focus();
 
@@ -53,7 +55,7 @@ export function PlaceholdersAndVanishInput({
       }
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [placeholders, handleVisibilityChange, startAnimation]);
+  }, [startAnimation, handleVisibilityChange]);
 
   const setTone = (tone: ChatMessageProps["tone"]) => {
     // Call the getTone function passed from the parent
@@ -231,11 +233,11 @@ export function PlaceholdersAndVanishInput({
       />
 
       <Select onValueChange={(value) => {
-          setTone(value as ChatMessageProps["tone"])
-          getTone && getTone(value as ChatMessageProps["tone"])
-        }}>
+        setTone(value as ChatMessageProps["tone"])
+        getTone && getTone(value as ChatMessageProps["tone"])
+      }}>
         <SelectTrigger className="absolute right-12 top-1/2 z-50 -translate-y-1/2 w-[180px]">
-          <SelectValue placeholder="Select the tone"/>
+          <SelectValue placeholder="Select the tone" />
         </SelectTrigger>
         <SelectContent>
           <SelectGroup>

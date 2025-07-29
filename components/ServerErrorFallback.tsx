@@ -9,7 +9,7 @@ interface ServerErrorFallbackProps {
 const ServerErrorFallback = ({
   error = "Server Error",
   title = "Something went wrong",
-  description = "We're experiencing technical difficulties. Please try again later."
+  description = "We&apos;re experiencing technical difficulties. Please try again later."
 }: ServerErrorFallbackProps) => {
   const handleRefresh = () => {
     window.location.reload();

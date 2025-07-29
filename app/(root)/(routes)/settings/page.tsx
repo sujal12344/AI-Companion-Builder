@@ -1,8 +1,18 @@
 import { SubscriptionButton } from "@/components/SubscriptionButton";
 import { checkSubscription } from "@/lib/subscription";
 
+// Force dynamic rendering for this page
+export const dynamic = 'force-dynamic';
+
 const SettingPage = async () => {
-  const isPro = await checkSubscription();
+  let isPro = false;
+  
+  try {
+    isPro = await checkSubscription();
+  } catch (error) {
+    console.error('Settings page error:', error);
+    // Continue with isPro = false as fallback
+  }
 
   // Define features for each plan
   const features = {

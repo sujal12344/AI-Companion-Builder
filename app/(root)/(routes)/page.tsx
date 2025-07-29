@@ -8,6 +8,9 @@ import CompanionSkeleton from "@/components/companionsSkeleton";
 import { CompanionErrorBoundary } from "@/components/ErrorBoundaryWrapper";
 import ServerErrorFallback from "@/components/ServerErrorFallback";
 
+// Force dynamic rendering for this page
+export const dynamic = 'force-dynamic';
+
 interface rootPageProps {
   searchParams: {
     categoryId: string;
@@ -59,7 +62,7 @@ const RootPage = async ({ searchParams }: rootPageProps) => {
         <ServerErrorFallback
           error="Database connection failed"
           title="Service Temporarily Unavailable"
-          description="We're experiencing technical difficulties. Please try again in a few moments."
+          description="We&apos;re experiencing technical difficulties. Please try again in a few moments."
         />
       </div>
     );

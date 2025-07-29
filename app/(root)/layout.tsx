@@ -1,7 +1,6 @@
 import Navbar from "@/components/Navbar";
 import Sidebar from "@/components/Sidebar";
 import { checkSubscription } from "@/lib/subscription";
-import SafeLayout from "@/components/SafeLayout";
 
 import { Suspense } from "react";
 import {
@@ -10,6 +9,9 @@ import {
   SidebarErrorBoundary,
   ContentErrorBoundary
 } from "@/components/ErrorBoundaryWrapper";
+
+// Force dynamic rendering for this layout
+export const dynamic = 'force-dynamic';
 
 // Loading components
 const NavbarSkeleton = () => (
@@ -78,36 +80,34 @@ const RootLayout = async ({ children }: { children: React.ReactNode }) => {
   }
 
   return (
-    <SafeLayout>
-      <RootErrorBoundary>
-        <div className="h-full">
-          {/* Navbar with error boundary and suspense */}
-          <NavbarErrorBoundary>
-            <Suspense fallback={<NavbarSkeleton />}>
-              <Navbar isPro={isPro} />
+    <RootErrorBoundary>
+      <div className="h-full">
+        {/* Navbar with error boundary and suspense */}
+        <NavbarErrorBoundary>
+          <Suspense fallback={<NavbarSkeleton />}>
+            <Navbar isPro={isPro} />
+          </Suspense>
+        </NavbarErrorBoundary>
+
+        {/* Sidebar with error boundary and suspense */}
+        <div className="hidden md:flex mt-16 w-20 flex-col fixed inset-y-0">
+          <SidebarErrorBoundary>
+            <Suspense fallback={<SidebarSkeleton />}>
+              <Sidebar isPro={isPro} />
             </Suspense>
-          </NavbarErrorBoundary>
-
-          {/* Sidebar with error boundary and suspense */}
-          <div className="hidden md:flex mt-16 w-20 flex-col fixed inset-y-0">
-            <SidebarErrorBoundary>
-              <Suspense fallback={<SidebarSkeleton />}>
-                <Sidebar isPro={isPro} />
-              </Suspense>
-            </SidebarErrorBoundary>
-          </div>
-
-          {/* Main content with error boundary */}
-          <main className="md:pl-20 pt-16 dark:bg-black bg-white">
-            <ContentErrorBoundary>
-              <Suspense fallback={<ContentSkeleton />}>
-                {children}
-              </Suspense>
-            </ContentErrorBoundary>
-          </main>
+          </SidebarErrorBoundary>
         </div>
-      </RootErrorBoundary>
-    </SafeLayout>
+
+        {/* Main content with error boundary */}
+        <main className="md:pl-20 pt-16 dark:bg-black bg-white">
+          <ContentErrorBoundary>
+            <Suspense fallback={<ContentSkeleton />}>
+              {children}
+            </Suspense>
+          </ContentErrorBoundary>
+        </main>
+      </div>
+    </RootErrorBoundary>
   );
 };
 
