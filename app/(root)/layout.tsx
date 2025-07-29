@@ -89,7 +89,7 @@ const RootLayout = async ({ children }: { children: React.ReactNode }) => {
         </div>
 
         {/* Main content with error boundary */}
-        <main className="md:pl-20 pt-16 h-[200%] dark:bg-black bg-white">
+        <main className="md:pl-20 pt-16 dark:bg-black bg-white">
           <ContentErrorBoundary>
             <Suspense fallback={<ContentSkeleton />}>
               {children}

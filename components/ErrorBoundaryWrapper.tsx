@@ -87,6 +87,26 @@ const ContentErrorFallback = ({ error, resetErrorBoundary }: { error: Error; res
   </div>
 );
 
+const CompanionErrorFallback = ({ resetErrorBoundary }: { error: Error; resetErrorBoundary: () => void }) => (
+  <div className="flex flex-col items-center justify-center min-h-[60vh] p-8 text-center">
+    <div className="relative mb-6">
+      <div className="w-16 h-16 bg-gradient-to-br from-orange-500/20 to-red-500/20 rounded-full flex items-center justify-center border border-orange-500/30">
+        <div className="text-2xl">🔧</div>
+      </div>
+    </div>
+    <h3 className="text-xl font-semibold text-primary mb-3">Companion Loading Failed</h3>
+    <p className="text-muted-foreground mb-4 max-w-sm">
+      We're having trouble loading this content. Let's try again.
+    </p>
+    <button
+      onClick={resetErrorBoundary}
+      className="px-5 py-2 bg-gradient-to-r from-sky-500 to-cyan-500 text-white rounded-lg hover:from-sky-600 hover:to-cyan-600 transition-all duration-200 font-medium"
+    >
+      Reload Companion
+    </button>
+  </div>
+);
+
 // Wrapper components
 export const RootErrorBoundary = ({ children }: { children: ReactNode }) => (
   <ErrorBoundary
@@ -121,6 +141,15 @@ export const ContentErrorBoundary = ({ children }: { children: ReactNode }) => (
   <ErrorBoundary
     FallbackComponent={ContentErrorFallback}
     onError={(error) => console.error('Main content error:', error)}
+  >
+    {children}
+  </ErrorBoundary>
+);
+
+export const CompanionErrorBoundary = ({ children }: { children: ReactNode }) => (
+  <ErrorBoundary
+    FallbackComponent={CompanionErrorFallback}
+    onError={(error) => console.error('Companion error:', error)}
   >
     {children}
   </ErrorBoundary>
