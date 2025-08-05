@@ -14,8 +14,11 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
-  title: "companion.ai",
+  title: "Companion.ai",
   description: `About :- AI-Companion is a cool software that lets you create your own custom AI models of people you admire, like actors or celebrities. It's a tool to make personalized artificial intelligence companions based on your favorite individuals`,
+  icons: {
+    icon: "/ai.png",
+  },
 };
 
 export default function RootLayout({
