@@ -18,7 +18,7 @@ export async function POST(
     const url = new URL(request.url);
     const tone = url.searchParams.get('tone');
     const user = await currentUser();
-    // console.log(`tone`, tone);
+    // console.log({tone});
     // console.log(`prompt`, prompt);
     // console.log("prompt", prompt);
     // console.log("user", user);
