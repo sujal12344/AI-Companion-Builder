@@ -4,6 +4,7 @@ import { PineconeStore } from "@langchain/pinecone";
 import { GoogleGenerativeAIEmbeddings } from '@langchain/google-genai';
 import { PDFLoader } from '@langchain/community/document_loaders/fs/pdf';
 import { RecursiveCharacterTextSplitter } from '@langchain/textsplitters';
+import { scrapeWebContent } from './webScraper';
 
 export type CompanionKey = {
   companionName: string;
@@ -52,16 +53,16 @@ export class MemoryManager {
     try {
       const pineconeIndex = this.pinecone.index(process.env.PINECONE_INDEX!);
 
-      // Check if already embedded
+      // Check if already embedded for this specific PDF
       const existingDocs = await pineconeIndex.query({
         topK: 1,
         vector: await this.embeddings.embedQuery("test"),
-        filter: { companionId },
+        filter: { companionId, source: pdfPath },
         includeMetadata: true,
       });
 
       if (existingDocs.matches?.length > 0) {
-        console.log(`Companion ${companionId} already embedded`);
+        console.log(`PDF ${pdfPath} already embedded for companion ${companionId}`);
         return;
       }
 
@@ -83,6 +84,7 @@ export class MemoryManager {
           companionId,
           chunkIndex: index,
           source: pdfPath,
+          type: 'PDF',
         }
       }));
 
@@ -91,9 +93,106 @@ export class MemoryManager {
         maxConcurrency: 5,
       });
 
-      console.log(`Embedded ${chunks.length} chunks for companion ${companionId}`);
+      console.log(`Embedded ${chunks.length} chunks for companion ${companionId} from PDF`);
     } catch (error) {
       console.error("Failed to embed PDF:", error);
+    }
+  }
+
+  // Load and embed text content for a companion
+  public async seedCompanionKnowledgeFromText(
+    companionId: string,
+    textContexts: { title: string; content: string }[]
+  ) {
+    try {
+      const pineconeIndex = this.pinecone.index(process.env.PINECONE_INDEX!);
+
+      const textSplitter = new RecursiveCharacterTextSplitter({
+        chunkSize: 1000,
+        chunkOverlap: 200,
+      });
+
+      const allChunks = [];
+
+      for (const textContext of textContexts) {
+        // Create document from text
+        const doc = {
+          pageContent: textContext.content,
+          metadata: {
+            title: textContext.title,
+            companionId,
+            type: 'TEXT',
+            source: `text_${textContext.title}`,
+          }
+        };
+
+        // Split text into chunks
+        const chunks = await textSplitter.splitDocuments([doc]);
+
+        // Add metadata to chunks
+        const chunksWithMetadata = chunks.map((chunk, index) => ({
+          ...chunk,
+          metadata: {
+            ...chunk.metadata,
+            chunkIndex: index,
+          }
+        }));
+
+        allChunks.push(...chunksWithMetadata);
+      }
+
+      if (allChunks.length > 0) {
+        await PineconeStore.fromDocuments(allChunks, this.embeddings, {
+          pineconeIndex,
+          maxConcurrency: 5,
+        });
+
+        console.log(`Embedded ${allChunks.length} text chunks for companion ${companionId}`);
+      }
+    } catch (error) {
+      console.error("Failed to embed text contexts:", error);
+    }
+  }
+
+  // Load and embed web content for a companion
+  public async seedCompanionKnowledgeFromLinks(
+    companionId: string,
+    linkContexts: { title: string; url: string }[]
+  ) {
+    try {
+      const pineconeIndex = this.pinecone.index(process.env.PINECONE_INDEX!);
+      const allChunks = [];
+
+      for (const linkContext of linkContexts) {
+        try {
+          const chunks = await scrapeWebContent(linkContext.url, linkContext.title);
+
+          // Add companion metadata to chunks
+          const chunksWithMetadata = chunks.map(chunk => ({
+            ...chunk,
+            metadata: {
+              ...chunk.metadata,
+              companionId,
+            }
+          }));
+
+          allChunks.push(...chunksWithMetadata);
+        } catch (error) {
+          console.error(`Failed to scrape ${linkContext.url}:`, error);
+          // Continue with other links even if one fails
+        }
+      }
+
+      if (allChunks.length > 0) {
+        await PineconeStore.fromDocuments(allChunks, this.embeddings, {
+          pineconeIndex,
+          maxConcurrency: 5,
+        });
+
+        console.log(`Embedded ${allChunks.length} link chunks for companion ${companionId}`);
+      }
+    } catch (error) {
+      console.error("Failed to embed link contexts:", error);
     }
   }
 
@@ -104,7 +203,6 @@ export class MemoryManager {
     try {
       const pineconeIndex = this.pinecone.index(process.env.PINECONE_INDEX!);
       const queryVector = await this.embeddings.embedQuery(userQuery);
-      console.log({ queryVector })
 
       const searchResults = await pineconeIndex.query({
         topK: 5,
@@ -114,13 +212,36 @@ export class MemoryManager {
       });
 
       return searchResults.matches?.map(match => ({
-        pageContent: match.metadata?.text,
+        pageContent: match.metadata?.text || match.metadata?.pageContent,
         metadata: match.metadata || {}
       })) || [];
 
     } catch (error) {
       console.error("Vector search failed:", error);
       return [];
+    }
+  }
+
+  // Clear all embeddings for a companion
+  public async clearCompanionEmbeddings(companionId: string) {
+    try {
+      const pineconeIndex = this.pinecone.index(process.env.PINECONE_INDEX!);
+
+      // Query all vectors for this companion
+      const queryResponse = await pineconeIndex.query({
+        topK: 10000, // Large number to get all vectors
+        vector: await this.embeddings.embedQuery("dummy"),
+        filter: { companionId },
+        includeMetadata: false,
+      });
+
+      if (queryResponse.matches && queryResponse.matches.length > 0) {
+        const vectorIds = queryResponse.matches.map(match => match.id);
+        await pineconeIndex.deleteMany(vectorIds);
+        console.log(`Cleared ${vectorIds.length} embeddings for companion ${companionId}`);
+      }
+    } catch (error) {
+      console.error("Failed to clear companion embeddings:", error);
     }
   }
 

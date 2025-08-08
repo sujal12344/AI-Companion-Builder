@@ -16,14 +16,15 @@ model Category {
 }
 
 model Companion {
-  id           String @id @default(uuid())
-  userId       String
-  userName     String
-  src          String
-  name         String @db.Text
-  description  String
-  instructions String @db.Text
-  seed         String @db.Text
+  id          String @id @default(uuid())
+  userId      String
+  userName    String
+  src         String
+  name        String @db.Text
+  description String @db.Text
+
+  instructions String? @db.Text
+  seed         String? @db.Text
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -32,9 +33,35 @@ model Companion {
   categoryId String
 
   messages Message[]
+  contexts CompanionContext[]
   // @@fulltext([name])
 
   @@index([categoryId])
+}
+
+enum ContextType {
+  PDF
+  LINK
+  TEXT
+}
+
+model CompanionContext {
+  id          String      @id @default(uuid())
+  type        ContextType
+  title       String
+  content     String?     @db.Text // For TEXT type
+  url         String? // For LINK type
+  fileName    String? // For PDF type
+  filePath    String? // For PDF type
+  isProcessed Boolean     @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  companion   Companion @relation(fields: [companionId], references: [id], onDelete: Cascade)
+  companionId String
+
+  @@index([companionId])
 }
 
 enum Role {

@@ -33,10 +33,11 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { useRouter } from "next/navigation";
 import CompanionFormSkeleton from "../../loading";
-import { Suspense } from "react";
+import { Suspense, useState } from "react";
+import { ContextUpload, ContextItem } from "@/components/ContextUpload";
 
 interface CompanionFormProps {
-  initialData: Companion | null;
+  initialData: (Companion & { contexts?: any[] }) | null;
   categories: Category[];
 }
 
@@ -84,15 +85,36 @@ export const CompanionForm = ({
   const { toast } = useToast();
   const router = useRouter();
 
+  // Initialize contexts from existing data
+  const [contexts, setContexts] = useState<ContextItem[]>(() => {
+    if (initialData?.contexts) {
+      return initialData.contexts.map((ctx: any) => ({
+        id: ctx.id,
+        type: ctx.type,
+        title: ctx.title,
+        content: ctx.content,
+        url: ctx.url,
+      }));
+    }
+    return [];
+  });
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: initialData || {
+    defaultValues: initialData ? {
+      name: initialData.name,
+      description: initialData.description,
+      instructions: initialData.instructions || "",
+      seed: initialData.seed || "",
+      src: initialData.src,
+      categoryId: initialData.categoryId,
+    } : {
       name: "",
       description: "",
       instructions: "",
       seed: "",
       src: "",
-      categoryId: undefined,
+      categoryId: "",
     },
   });
 
@@ -100,11 +122,33 @@ export const CompanionForm = ({
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
+      const formData = new FormData();
+
+      // Add form values
+      Object.entries(values).forEach(([key, value]) => {
+        formData.append(key, value);
+      });
+
+      // Add contexts
+      formData.append('contexts', JSON.stringify(contexts));
+
+      // Add PDF files
+      contexts.forEach((context, index) => {
+        if (context.type === 'PDF' && context.file) {
+          formData.append(`pdf_${index}`, context.file);
+        }
+      });
+
       if (initialData) {
-        await axios.patch(`/api/companion/${initialData.id}`, values);
+        await axios.patch(`/api/companion/${initialData.id}`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
       } else {
-        await axios.post("/api/companion", values);
+        await axios.post("/api/companion", formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
       }
+
       toast({
         description: "Success",
       });
@@ -292,6 +336,22 @@ export const CompanionForm = ({
                   <FormMessage />
                 </FormItem>
               )}
+            />
+
+            <div className="space-y-2 w-full">
+              <div>
+                <h3 className="text-lg font-medium">Knowledge Base</h3>
+                <p className="text-sm text-muted-foreground">
+                  Add context sources to enhance your companion's knowledge
+                </p>
+              </div>
+              <Separator className="bg-primary/10" />
+            </div>
+
+            <ContextUpload
+              contexts={contexts}
+              onChange={setContexts}
+              disabled={isLoading}
             />
             <div className="flex w-full justify-center">
               <Button size={"lg"} disabled={isLoading}>

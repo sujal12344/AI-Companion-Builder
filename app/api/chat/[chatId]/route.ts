@@ -61,16 +61,16 @@ export async function POST(
     // Seed initial chat history if empty
     const chatHistory = await memoryManager.readLatestHistory(companionKey);
     if (!chatHistory) {
-      await memoryManager.seedChatHistory(companion.seed, "\n\n", companionKey);
+      await memoryManager.seedChatHistory(companion.seed || "", "\n\n", companionKey);
     }
 
-    // Load companion's PDF knowledge (if exists)
-    await loadCompanionPDF(memoryManager, companion);
+    // Load companion's knowledge from contexts
+    await loadCompanionContexts(memoryManager, companion);
 
     // Save user query to chat history
     await memoryManager.writeToHistory(`User: ${userQuery}\n`, companionKey);
 
-    // Get recent chat history and relevant context from PDF
+    // Get recent chat history and relevant context from all sources
     const recentChatHistory = await memoryManager.readLatestHistory(companionKey);
     const relevantContext = await getRelevantContext(memoryManager, userQuery, companion.id);
 
@@ -114,31 +114,65 @@ export async function POST(
   }
 }
 
-// Helper function to load companion PDF
-async function loadCompanionPDF(memoryManager: MemoryManager, companion: Companion) {
+// Helper function to load companion contexts
+async function loadCompanionContexts(memoryManager: MemoryManager, companion: Companion) {
   try {
-    const pdfFileName = companion.name.replaceAll(" ", "_") + ".pdf";
-    const pdfPath = path.join(process.cwd(), 'companions', pdfFileName);
+    // Get all contexts for this companion
+    const contexts = await prismadb.companionContext.findMany({
+      where: { companionId: companion.id },
+    });
 
-    if (fs.existsSync(pdfPath)) {
-      await memoryManager.seedCompanionKnowledgeFromPDF(companion.id, pdfPath);
-    } else {
-      console.log(`PDF not found: ${pdfFileName}`);
+    for (const context of contexts) {
+      if (context.type === 'PDF' && context.filePath && !context.isProcessed) {
+        if (fs.existsSync(context.filePath)) {
+          await memoryManager.seedCompanionKnowledgeFromPDF(companion.id, context.filePath);
+
+          // Mark as processed
+          await prismadb.companionContext.update({
+            where: { id: context.id },
+            data: { isProcessed: true },
+          });
+        }
+      } else if (context.type === 'TEXT' && context.content && !context.isProcessed) {
+        await memoryManager.seedCompanionKnowledgeFromText(companion.id, [
+          { title: context.title, content: context.content }
+        ]);
+
+        // Mark as processed
+        await prismadb.companionContext.update({
+          where: { id: context.id },
+          data: { isProcessed: true },
+        });
+      } else if (context.type === 'LINK' && context.url && !context.isProcessed) {
+        await memoryManager.seedCompanionKnowledgeFromLinks(companion.id, [
+          { title: context.title, url: context.url }
+        ]);
+
+        // Mark as processed
+        await prismadb.companionContext.update({
+          where: { id: context.id },
+          data: { isProcessed: true },
+        });
+      }
     }
   } catch (error) {
-    console.error("Error loading companion PDF:", error);
+    console.error("Error loading companion contexts:", error);
   }
 }
 
-// Helper function to get relevant context from PDF
+// Helper function to get relevant context from all sources
 async function getRelevantContext(memoryManager: MemoryManager, userQuery: string, companionId: string) {
   try {
     const similarDocs = await memoryManager.vectorSearch(userQuery, companionId);
 
     if (similarDocs?.length > 0) {
       return similarDocs
-        .map(doc => doc.pageContent)
-        .join("\n");
+        .map(doc => {
+          const source = doc.metadata?.type || 'Unknown';
+          const title = doc.metadata?.title || '';
+          return `[${source}${title ? ` - ${title}` : ''}]: ${doc.pageContent}`;
+        })
+        .join("\n\n");
     }
 
     return "";

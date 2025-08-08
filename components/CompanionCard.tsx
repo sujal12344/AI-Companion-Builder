@@ -3,7 +3,6 @@ import { MessageSquare } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { Companion } from "@prisma/client";
-import { auth } from "@clerk/nextjs/server";
 
 interface CompanionCardProps {
   item: Companion & {
@@ -11,11 +10,10 @@ interface CompanionCardProps {
       messages: number;
     };
   };
+  userId?: string | null;
 }
 
-const CompanionCard = ({ item }: CompanionCardProps) => {
-  const { userId } = auth();
-
+const CompanionCard = ({ item, userId }: CompanionCardProps) => {
   const isUserLoggedin = () => {
     return !!userId;
   };

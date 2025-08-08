@@ -1,6 +1,7 @@
 import Image from "next/image";
 import CompanionCard from "@/components/CompanionCard";
 import { Companion } from "@prisma/client";
+import { auth } from "@clerk/nextjs/server";
 
 interface CompanionProps {
   data: (Companion & {
@@ -11,6 +12,7 @@ interface CompanionProps {
 }
 
 const CompanionFun = async ({ data }: CompanionProps) => {
+  const { userId } = await auth();
   if (data.length === 0) {
     return (
       <div className="flex flex-col pt-10 items-center justify-center">
@@ -30,7 +32,7 @@ const CompanionFun = async ({ data }: CompanionProps) => {
   return (
     <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-2 pb-10">
       {data.map((item) => (
-        <CompanionCard key={item.id} item={item} />
+        <CompanionCard key={item.id} item={item} userId={userId} />
       ))}
     </div>
   );
