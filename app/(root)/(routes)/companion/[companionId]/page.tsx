@@ -5,9 +5,9 @@ import { redirect } from "next/navigation";
 import { checkSubscription } from "@/lib/subscription";
 
 interface companionPageProps {
-  params: {
+  params: Promise<{
     companionId: string;
-  };
+  }>
 }
 
 const CompanionPage = async ({ params }: companionPageProps) => {
@@ -16,14 +16,16 @@ const CompanionPage = async ({ params }: companionPageProps) => {
     return redirectToSignIn;
   }
 
-  // const isPro = await checkSubscription();
-  // if (!isPro) {
-  //   redirect("/settings");
-  // }
+  const isPro = await checkSubscription();
+  if (!isPro) {
+    redirect("/settings");
+  }
+
+  const { companionId } = await params;
 
   const companion = await prismadb.companion.findUnique({
     where: {
-      id: params.companionId,
+      id: companionId,
       userId,
     },
   });

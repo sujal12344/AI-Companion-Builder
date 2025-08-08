@@ -4,9 +4,9 @@ import { redirect } from "next/navigation";
 import { ChatClient } from "./components/client";
 
 interface ChatIdProps {
-  params: {
+  params: Promise<{
     chatId: string;
-  };
+  }>;
 }
 
 const ChatIdPage = async ({ params }: ChatIdProps) => {
@@ -14,9 +14,12 @@ const ChatIdPage = async ({ params }: ChatIdProps) => {
   if (!userId) {
     return redirectToSignIn();
   }
+
+  const { chatId } = await params;
+
   const companion = await prismadb.companion.findUnique({
     where: {
-      id: params.chatId,
+      id: chatId,
     },
     include: {
       messages: {

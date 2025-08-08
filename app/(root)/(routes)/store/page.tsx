@@ -10,20 +10,22 @@ import { currentUser } from "@clerk/nextjs/server";
 export const dynamic = 'force-dynamic';
 
 interface rootPageProps {
-  searchParams: {
+  searchParams: Promise<{
     categoryId: string;
     name: string;
-  };
+  }>;
 }
 
 const StorePage = async ({ searchParams }: rootPageProps) => {
   try {
     const user = await currentUser();
+    const { categoryId, name } = await searchParams;
+
     const data = await prismadb.companion.findMany({
       where: {
-        categoryId: searchParams.categoryId,
+        categoryId: categoryId,
         name: {
-          search: searchParams.name,
+          search: name,
         },
         userId: user?.id,
       },

@@ -12,24 +12,26 @@ import ServerErrorFallback from "@/components/ServerErrorFallback";
 export const dynamic = 'force-dynamic';
 
 interface rootPageProps {
-  searchParams: {
+  searchParams: Promise<{
     categoryId: string;
     name: string;
-  };
+  }>;
 }
 
 const RootPage = async ({ searchParams }: rootPageProps) => {
   try {
+    const { categoryId, name } = await searchParams;
+
     // Build the where clause more efficiently
     const whereClause: any = {};
 
-    if (searchParams.categoryId) {
-      whereClause.categoryId = searchParams.categoryId;
+    if (categoryId) {
+      whereClause.categoryId = categoryId;
     }
 
-    if (searchParams.name) {
+    if (name) {
       whereClause.name = {
-        search: searchParams.name,
+        search: name,
       };
     }
 

@@ -12,112 +12,88 @@ export type CompanionKey = {
 };
 
 export class MemoryManager {
-  public static instance: MemoryManager;
-  private RedisDBhistory: Redis;
-  private vectorDB: Pinecone;
+  private static instance: MemoryManager;
+  private redis: Redis;
+  private pinecone: Pinecone;
+  private embeddings: GoogleGenerativeAIEmbeddings;
 
-  public constructor() {
-    this.RedisDBhistory = Redis.fromEnv();
-    this.vectorDB = new Pinecone({
+  private constructor() {
+    this.redis = Redis.fromEnv();
+    this.pinecone = new Pinecone({
       apiKey: process.env.PINECONE_API_KEY!,
+    });
+    this.embeddings = new GoogleGenerativeAIEmbeddings({
+      apiKey: process.env.GEMINI_API_KEY!,
+      model: 'text-embedding-004',
     });
   }
 
-  public async init() {
+  private async init() {
+    // Validate environment variables
+    const requiredEnvVars = ['PINECONE_INDEX', 'PINECONE_API_KEY', 'GEMINI_API_KEY'];
+    for (const envVar of requiredEnvVars) {
+      if (!process.env[envVar]) {
+        throw new Error(`${envVar} environment variable is required`);
+      }
+    }
+
+    // Test Pinecone connection
     try {
-      // Check required environment variables
-      if (!process.env.PINECONE_INDEX) {
-        throw new Error("PINECONE_INDEX environment variable is not defined");
-      }
-      if (!process.env.PINECONE_API_KEY) {
-        throw new Error("PINECONE_API_KEY environment variable is not defined");
-      }
-      if (!process.env.GEMINI_API_KEY) {
-        throw new Error("GEMINI_API_KEY environment variable is not defined");
-      }
-
-      // Test actual Pinecone connection
-      const index = this.vectorDB.index(process.env.PINECONE_INDEX);
+      const index = this.pinecone.index(process.env.PINECONE_INDEX!);
       await index.describeIndexStats();
-
-      //console.log("Pinecone connection verified successfully");
     } catch (error) {
-      console.error("Failed to initialize Pinecone:", error);
-      if (error instanceof TypeError) {
-        console.error(
-          "Network request failed. Please check your internet connection and API key."
-        );
-      } else {
-        console.error("An unexpected error occurred:", error);
-      }
-      throw error; // Re-throw to prevent app from continuing with broken connection
+      console.error("Failed to connect to Pinecone:", error);
+      throw error;
     }
   }
 
-  // Add companion knowledge from PDF to vector database
-  public async seedCompanionKnowledgeFromPDF(
-    companionId: string,
-    pdfPath: string
-  ) {
+  // Load and embed PDF content for a companion
+  public async seedCompanionKnowledgeFromPDF(companionId: string, pdfPath: string) {
     try {
-      const pineconeIndex = this.vectorDB.index(process.env.PINECONE_INDEX!);
+      const pineconeIndex = this.pinecone.index(process.env.PINECONE_INDEX!);
 
-      const embeddings = new GoogleGenerativeAIEmbeddings({
-        apiKey: process.env.GEMINI_API_KEY!,
-        model: 'text-embedding-004',
-      });
-
-      // Check if already embedded (to avoid re-embedding)
+      // Check if already embedded
       const existingDocs = await pineconeIndex.query({
         topK: 1,
-        vector: await embeddings.embedQuery("test"),
+        vector: await this.embeddings.embedQuery("test"),
         filter: { companionId },
         includeMetadata: true,
       });
 
-      if (existingDocs.matches && existingDocs.matches.length > 0) {
-        console.log(`Companion ${companionId} already embedded, skipping...`);
+      if (existingDocs.matches?.length > 0) {
+        console.log(`Companion ${companionId} already embedded`);
         return;
       }
 
-      // Load PDF
+      // Load and process PDF
       const loader = new PDFLoader(pdfPath);
       const docs = await loader.load();
 
-      // Split documents into chunks
       const textSplitter = new RecursiveCharacterTextSplitter({
         chunkSize: 1000,
         chunkOverlap: 200,
-        keepSeparator: true
       });
 
-      const chunkedDocs = await textSplitter.splitDocuments(docs);
+      const chunks = await textSplitter.splitDocuments(docs);
 
-      // Add metadata to chunks
-      const docsWithMetadata = chunkedDocs.map((doc, index) => ({
+      // Add metadata and embed
+      const docsWithMetadata = chunks.map((doc, index) => ({
         ...doc,
         metadata: {
-          ...doc.metadata,
-          companionId: companionId,
-          fileName: `${companionId}.pdf`,
+          companionId,
           chunkIndex: index,
+          source: pdfPath,
         }
       }));
 
-      // Embed and store in Pinecone
-      await PineconeStore.fromDocuments(
-        docsWithMetadata,
-        embeddings,
-        {
-          pineconeIndex,
-          maxConcurrency: 5,
-        }
-      );
+      await PineconeStore.fromDocuments(docsWithMetadata, this.embeddings, {
+        pineconeIndex,
+        maxConcurrency: 5,
+      });
 
-      console.log(`Successfully embedded ${chunkedDocs.length} chunks for companion ${companionId} from PDF`);
-
+      console.log(`Embedded ${chunks.length} chunks for companion ${companionId}`);
     } catch (error) {
-      console.error("Failed to seed companion knowledge from PDF:", error);
+      console.error("Failed to embed PDF:", error);
     }
   }
 
@@ -126,36 +102,24 @@ export class MemoryManager {
     companionId: string
   ) {
     try {
-      const pineconeIndex = this.vectorDB.index(process.env.PINECONE_INDEX!);
+      const pineconeIndex = this.pinecone.index(process.env.PINECONE_INDEX!);
+      const queryVector = await this.embeddings.embedQuery(userQuery);
+      console.log({ queryVector })
 
-      const embeddings = new GoogleGenerativeAIEmbeddings({
-        apiKey: process.env.GEMINI_API_KEY!,
-        model: 'text-embedding-004',
-      });
-
-      // Create query vector
-      const queryVector = await embeddings.embedQuery(userQuery);
-
-      // Search with companion filter
       const searchResults = await pineconeIndex.query({
-        topK: 10,
+        topK: 5,
         vector: queryVector,
         includeMetadata: true,
-        filter: { companionId: companionId },
+        filter: { companionId },
       });
 
-      // Convert to LangChain document format
-      const similarDocs = searchResults.matches?.map(match => ({
-        pageContent: match.metadata?.text || '',
+      return searchResults.matches?.map(match => ({
+        pageContent: match.metadata?.text,
         metadata: match.metadata || {}
       })) || [];
 
-      console.log("similarDocs found:", similarDocs.length);
-      return similarDocs;
-
     } catch (error) {
-      console.log("WARNING: failed to get vector search results.", error);
-      console.log("err.message", {error});
+      console.error("Vector search failed:", error);
       return [];
     }
   }
@@ -176,54 +140,36 @@ export class MemoryManager {
     return `${companionName}-${modelName}-${userId}`;
   }
 
+  // Save message to chat history
   public async writeToHistory(text: string, companionKey: CompanionKey) {
-    //console.log("writeToHistoryProps", text, companionKey);
-
-    if (!companionKey || typeof companionKey.userId == "undefined") {
-      //console.log("Companion key set incorrectly");
-      return "";
-    }
+    if (!companionKey?.userId) return null;
 
     const key = this.generateRedisCompanionKey(companionKey);
-    //console.log("key", key);
-    const result = await this.RedisDBhistory.zadd(key, {
+    return await this.redis.zadd(key, {
       score: Date.now(),
       member: text,
     });
-    //console.log("result", result);
-
-    return result;
   }
 
+  // Get recent chat history
   public async readLatestHistory(companionKey: CompanionKey): Promise<string> {
-    if (!companionKey || typeof companionKey.userId == "undefined") {
-      return "";
-    }
+    if (!companionKey?.userId) return "";
 
     const key = this.generateRedisCompanionKey(companionKey);
-    let result = await this.RedisDBhistory.zrange(key, 0, Date.now(), {
-      byScore: true,
-    });
 
-    result = result.slice(-30).reverse();
-    const recentChats = result.reverse().join("\n");
-    return recentChats;
+    const result = await this.redis.zrange(key, 0, Date.now(), { byScore: true });
+
+    return result.slice(-10).join("\n"); // Get last 10 messages
   }
 
-  public async seedChatHistory(
-    seedContent: string,
-    delimiter: string = "\n",
-    companionKey: CompanionKey
-  ) {
+  // Initialize chat history with seed content
+  public async seedChatHistory(seedContent: string, delimiter: string = "\n", companionKey: CompanionKey) {
     const key = this.generateRedisCompanionKey(companionKey);
-    if (await this.RedisDBhistory.exists(key)) return;
+    if (await this.redis.exists(key)) return;
 
-    const content = seedContent.split(delimiter);
-
-    let counter = 0;
-    for (const line of content) {
-      await this.RedisDBhistory.zadd(key, { score: counter, member: line });
-      counter = counter + 1;
+    const lines = seedContent.split(delimiter);
+    for (let i = 0; i < lines.length; i++) {
+      await this.redis.zadd(key, { score: i, member: lines[i] });
     }
   }
 }

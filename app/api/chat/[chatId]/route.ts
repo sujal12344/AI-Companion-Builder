@@ -1,43 +1,40 @@
 import { StreamingTextResponse } from "ai";
 import { currentUser } from "@clerk/nextjs/server";
-
 import { NextResponse } from "next/server";
+import fs from 'fs';
+import path from 'path';
+
 import prismadb from "@/lib/prismadb";
 import { MemoryManager } from "@/lib/memory";
-
 import { rateLimit } from "@/lib/rateLimit";
 import Groq from "groq-sdk";
-
-import fs from 'fs';
-import path from 'path'
+import { Companion } from "@prisma/client";
 
 export async function POST(
   request: Request,
-  { params }: { params: { chatId: string } }
+  { params }: { params: Promise<{ chatId: string }> }
 ) {
   try {
-    const { prompt: userQuery } = await request.json() as { prompt: string }
+    const { prompt: userQuery } = await request.json() as { prompt: string };
     const user = await currentUser();
-    // console.log({userQuery})
 
-    if (!user || !user.firstName || !user.id || userQuery.trim()) {
-      return new NextResponse("Unauthorized", { status: 401 });
+    // Validate user and query
+    if (!user?.firstName || !user?.id || !userQuery?.trim()) {
+      return new NextResponse("Unauthorized or empty query", { status: 401 });
     }
+    const { chatId } = await params;
 
-    const identifier = `${request.url}-${user.id}`
-
+    // Rate limiting
+    const identifier = `chat-${chatId}-${user.id}`;
     const { success } = await rateLimit(identifier);
-
-    // console.log({success, identifier})
-
     if (!success) {
       return new NextResponse("Rate limit exceeded", { status: 429 });
     }
 
+
+    // Get companion and save user message
     const companion = await prismadb.companion.update({
-      where: {
-        id: params.chatId,
-      },
+      where: { id: chatId },
       data: {
         messages: {
           create: {
@@ -53,133 +50,45 @@ export async function POST(
       return new NextResponse("Companion not found", { status: 404 });
     }
 
-    console.log({ companion })
-
+    // Initialize memory manager and chat history
+    const memoryManager = await MemoryManager.getInstance();
     const companionKey = {
       companionName: companion.id,
       userId: user.id,
-      modelName: "llama2-13b",
+      modelName: "groq-llama3",
     };
 
-    const memoryManager = await MemoryManager.getInstance();
-
-    const records = await memoryManager.readLatestHistory(companionKey);
-
-    if (records.length === 0 || records === '') {
-      await memoryManager?.seedChatHistory(
-        companion.seed,
-        "\n\n",
-        companionKey
-      );
+    // Seed initial chat history if empty
+    const chatHistory = await memoryManager.readLatestHistory(companionKey);
+    if (!chatHistory) {
+      await memoryManager.seedChatHistory(companion.seed, "\n\n", companionKey);
     }
 
-    // Seed companion knowledge from PDF into vector database if not already done
-    try {
-      const companionPdfPath = path.join(process.cwd(), 'companions', `${companion.name.replaceAll(" ", "_")}.pdf`);
+    // Load companion's PDF knowledge (if exists)
+    await loadCompanionPDF(memoryManager, companion);
 
-      if (fs.existsSync(companionPdfPath)) {
-        await memoryManager.seedCompanionKnowledgeFromPDF(companion.id, companionPdfPath);
-      } else {
-        console.log(`PDF not found for companion: ${companion.name}`);
-      }
-    } catch (error) {
-      console.log("Could not seed companion knowledge from PDF:", error);
-    }
+    // Save user query to chat history
+    await memoryManager.writeToHistory(`User: ${userQuery}\n`, companionKey);
 
-    await memoryManager.writeToHistory("User:" + userQuery + `\n`, companionKey);
+    // Get recent chat history and relevant context from PDF
+    const recentChatHistory = await memoryManager.readLatestHistory(companionKey);
+    const relevantContext = await getRelevantContext(memoryManager, userQuery, companion.id);
 
-    const recentChatHistory = await memoryManager.readLatestHistory(
-      companionKey
-    );
+    // Generate AI response using Groq
+    const aiResponse = await generateAIResponse(companion, relevantContext, recentChatHistory);
 
-    const similarDocs = await memoryManager.vectorSearch(
-      userQuery, // Use user's current question for better context matching
-      companion.id // Use companion ID instead of filename
-    );
-    console.log("similarDocs", similarDocs);
+    // Save AI response and return stream
+    if (aiResponse?.trim()) {
+      // Save to chat history
+      await memoryManager.writeToHistory(`${companion.name}: ${aiResponse.trim()}\n`, companionKey);
 
-    let relevantHistory = "";
-
-    if (!!similarDocs && similarDocs.length !== 0) {
-      relevantHistory = similarDocs
-        .map((doc) => {
-          console.log("doc.pageContent", doc.pageContent);
-          return doc.pageContent;
-        })
-        .join("\n");
-    }
-
-    // Call Groq for inference (Free alternative to Replicate)
-    const groq = new Groq({
-      apiKey: process.env.GROQ_API_KEY,
-      baseURL: 'https://api.groq.com'
-    });
-
-    const betterPrompt = `
-        ONLY generate plain sentences without prefix of who is speaking. DO NOT use ${companion.name}: prefix. 
-
-        And Now, You are ${companion.name}, A real person with real thoughts and feelings.
-
-        You have ability to think and feel like a real person and respond like them.
-
-        If ${companion.name} are not able to answer the question, just say "Hmm, I am not sure about that."
-
-        Below is the instructions for you:
-
-        ${companion.instructions}
-
-        Below are the relevant details about ${companion.name}'s past and the conversation you are in.
-        ${relevantHistory}
-
-        Give Response in ${companion.name} words only.
-
-        ${recentChatHistory}\n${companion.name}:`;
-
-    const completion = await groq.chat.completions.create({
-      messages: [
-        {
-          role: "user",
-          content: betterPrompt,
-        },
-      ],
-      // stream: true,
-      model: "compound-beta",
-      temperature: 0.7,
-      max_tokens: 2048,
-    });
-
-    const response = completion.choices[0]?.message?.content || "";
-
-    const cleaned = response?.replaceAll(",", ""); //clean the response like [Then, you, can, do, this] to [Then you can do this]
-    console.log("cleaned", cleaned);
-    const chunks = cleaned?.split("\n"); //split the response by new line
-    console.log("chunks", chunks);
-    const responseBody = chunks?.[0];
-    console.log("responseBody", responseBody);
-    await memoryManager.writeToHistory("" + responseBody?.trim(), companionKey); //write the response to history
-    console.log("writeToHistory", "" + responseBody?.trim());
-    var Readable = require("stream").Readable; //import Readable from stream
-
-    let s = new Readable();
-    console.log("s", s);
-    s.push(responseBody);
-    s.push(null);
-    console.log("s", s);
-
-    if (responseBody && responseBody.length > 1) {
-      await memoryManager.writeToHistory(
-        `${responseBody.trim()}`,
-        companionKey
-      );
-
+      // Save to database
       await prismadb.companion.update({
-        where: {
-          id: params.chatId,
-        },
+        where: { id: chatId },
         data: {
           messages: {
             create: {
-              content: responseBody.trim(),
+              content: aiResponse.trim(),
               role: "system",
               userId: user.id,
             },
@@ -188,9 +97,86 @@ export async function POST(
       });
     }
 
-    return new StreamingTextResponse(s);
+    // Create readable stream for response
+    const responseText = aiResponse || "I'm not sure how to respond to that.";
+
+    const stream = new ReadableStream({
+      start(controller) {
+        controller.enqueue(new TextEncoder().encode(responseText));
+        controller.close();
+      },
+    });
+
+    return new StreamingTextResponse(stream);
   } catch (error) {
-    console.log("[CHAT_POST]", error);
-    return new NextResponse(`Internal Server: ${error}`, { status: 500 });
+    console.error("[CHAT_POST]", error);
+    return new NextResponse(`Internal Server Error: ${error}`, { status: 500 });
+  }
+}
+
+// Helper function to load companion PDF
+async function loadCompanionPDF(memoryManager: MemoryManager, companion: Companion) {
+  try {
+    const pdfFileName = companion.name.replaceAll(" ", "_") + ".pdf";
+    const pdfPath = path.join(process.cwd(), 'companions', pdfFileName);
+
+    if (fs.existsSync(pdfPath)) {
+      await memoryManager.seedCompanionKnowledgeFromPDF(companion.id, pdfPath);
+    } else {
+      console.log(`PDF not found: ${pdfFileName}`);
+    }
+  } catch (error) {
+    console.error("Error loading companion PDF:", error);
+  }
+}
+
+// Helper function to get relevant context from PDF
+async function getRelevantContext(memoryManager: MemoryManager, userQuery: string, companionId: string) {
+  try {
+    const similarDocs = await memoryManager.vectorSearch(userQuery, companionId);
+
+    if (similarDocs?.length > 0) {
+      return similarDocs
+        .map(doc => doc.pageContent)
+        .join("\n");
+    }
+
+    return "";
+  } catch (error) {
+    console.error("Error getting relevant context:", error);
+    return "";
+  }
+}
+
+// Helper function to generate AI response
+async function generateAIResponse(companion: any, relevantContext: string, recentChatHistory: string) {
+  try {
+    const groq = new Groq({
+      apiKey: process.env.GROQ_API_KEY,
+    });
+
+    const prompt = `
+    You are ${companion.name}. Respond naturally without using your name as a prefix.
+
+    Instructions: ${companion.instructions}
+
+    Relevant context about you: ${relevantContext}
+
+    Recent conversation: ${recentChatHistory}
+
+    Respond as ${companion.name} would, using the context provided.
+`;
+
+    const completion = await groq.chat.completions.create({
+      messages: [{ role: "user", content: prompt }],
+      model: "llama3-8b-8192",
+      temperature: 0.7,
+      max_tokens: 2048,
+    });
+
+    return completion.choices[0]?.message?.content || "";
+  } catch (error) {
+    console.error("Error generating AI response:", error);
+    return "I'm having trouble responding right now. Please try again.";
   }
 }
