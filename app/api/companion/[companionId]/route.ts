@@ -36,11 +36,11 @@ export async function PATCH(
       return new NextResponse("Missing required fields", { status: 400 });
     }
 
-    // const isPro = await checkSubscription();
-    // console.log("isPro", isPro);
-    // if (!isPro) {
-    //   return new NextResponse("Pro Subscription required", { status: 403 });
-    // }
+    const isPro = await checkSubscription();
+
+    if (!isPro) {
+      return new NextResponse("Pro Subscription required", { status: 403 });
+    }
 
     const companion = await prismadb.companion.update({
       where: {

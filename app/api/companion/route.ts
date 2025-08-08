@@ -28,10 +28,10 @@ export async function POST(req: Request) {
       return new NextResponse("Missing required fields", { status: 400 });
     }
 
-    // const isPro = await checkSubscription();
-    // if (!isPro) {
-    //   return new NextResponse("Pro Subscription required", { status: 403 });
-    // }
+    const isPro = await checkSubscription();
+    if (!isPro) {
+      return new NextResponse("Pro Subscription required", { status: 403 });
+    }
 
     const companion = await prismadb.companion.create({
       data: {

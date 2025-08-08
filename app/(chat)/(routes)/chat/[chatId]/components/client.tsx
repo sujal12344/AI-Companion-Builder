@@ -8,7 +8,6 @@ import { useCompletion } from "ai/react";
 import { PlaceholdersAndVanishInput } from "@/components/ui/placeholders-and-vanish-input";
 import { ChatMessages } from "@/components/ChatMessages";
 import { ChatMessageProps } from "@/components/ChatMessage";
-import { Tone } from "@prisma/client";
 
 interface ChatClientProps {
   companion: Companion & {
@@ -24,19 +23,15 @@ export const ChatClient = ({ companion }: ChatClientProps) => {
   const [messages, setMessages] = useState<ChatMessageProps[]>(
     companion.messages as ChatMessageProps[]
   );
-  const [tone, setTone] = useState<Tone>();
 
-  const { input, isLoading, setInput, handleSubmit, handleInputChange} = useCompletion({
-    api: `/api/chat/${companion.id}?tone=${tone}`,
+  const { input, isLoading, setInput, handleSubmit, handleInputChange } = useCompletion({
+    api: `/api/chat/${companion.id}`,
     onFinish(prompt, completion) {
-      console.log(`prompt`, prompt, `completion`, completion);
 
       const systemMessage: ChatMessageProps = {
         role: "system",
-        content: completion,
-        tone: tone,
+        content: completion
       };
-      console.log(`systemMessage`, systemMessage);
       setMessages((current) => [...current, systemMessage]);
       setInput("");
 
@@ -49,13 +44,9 @@ export const ChatClient = ({ companion }: ChatClientProps) => {
     const userMessage: ChatMessageProps = {
       role: "user",
       content: input,
-      tone: tone,
     };
     setMessages((current) => [...current, userMessage]);
     handleSubmit(e);
-    console.log(`tone`, tone);
-    console.log(`input`, input);
-    console.log(`userMessage`, userMessage);
   };
 
   const placeholders = {
@@ -95,6 +86,7 @@ export const ChatClient = ({ companion }: ChatClientProps) => {
         companion={companion}
         isLoading={isLoading}
         messages={messages}
+        key={companion.id}
       />
       <PlaceholdersAndVanishInput
         placeholders={placeholders[companion.name as keyof typeof placeholders] || placeholders["default"]}
@@ -102,7 +94,6 @@ export const ChatClient = ({ companion }: ChatClientProps) => {
         onSubmit={onSubmit}
         disabled={isLoading}
         inputValue={input}
-        getTone={(tone: Tone | undefined) => setTone(tone)} // Pass the setTone function to the child
       />
     </div>
   );

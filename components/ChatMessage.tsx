@@ -10,7 +10,6 @@ import { useToast } from "@/components/ui/use-toast";
 import { BotAvatar } from "@/components/BotAvatar";
 import { UserAvatar } from "@/components/UserAvatar";
 import { Button } from "@/components/ui/button";
-import { Tone } from "@prisma/client";
 
 export interface ChatMessageProps {
   role: "system" | "user";
@@ -18,7 +17,6 @@ export interface ChatMessageProps {
   isLoading?: boolean;
   src?: string;
   id?: string;
-  tone?: Tone;
 }
 
 export const ChatMessage = ({
@@ -26,11 +24,9 @@ export const ChatMessage = ({
   content,
   isLoading,
   src,
-  tone,
 }: ChatMessageProps) => {
   const { toast } = useToast();
   const { theme } = useTheme();
-  console.log(`tone`, tone);
 
   const onCopy = () => {
     if (!content) {
