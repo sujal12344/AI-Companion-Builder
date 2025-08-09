@@ -1,6 +1,6 @@
 "use client";
 
-import * as z from "zod";
+import z from "zod";
 import axios from "axios";
 
 import { Category, Companion } from "@prisma/client";

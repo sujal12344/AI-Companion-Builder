@@ -1,5 +1,7 @@
+import { NextConfig } from "next";
+
 /** @type {import('next').NextConfig} */
-const nextConfig = {
+const nextConfig: NextConfig = {
   serverExternalPackages: ["@prisma/client"],
   images: {
     remotePatterns: [
@@ -11,7 +13,7 @@ const nextConfig = {
     ],
   },
   eslint: {
-    ignoreDuringBuilds: true,
+    ignoreDuringBuilds: false,
   },
   typescript: {
     ignoreBuildErrors: false,
