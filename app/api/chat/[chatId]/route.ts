@@ -123,36 +123,21 @@ async function loadCompanionContexts(memoryManager: MemoryManager, companion: Co
     });
 
     for (const context of contexts) {
-      if (context.type === 'PDF' && context.filePath && !context.isProcessed) {
+      if (['PDF', 'DOCX', 'TXT', 'CSV'].includes(context.type) && context.filePath) {
         if (fs.existsSync(context.filePath)) {
-          await memoryManager.seedCompanionKnowledgeFromPDF(companion.id, context.filePath);
+          await memoryManager.seedCompanionKnowledgeFromDocument(companion.id, context.filePath, context.type.toLowerCase());
 
-          // Mark as processed
-          await prismadb.companionContext.update({
-            where: { id: context.id },
-            data: { isProcessed: true },
-          });
         }
-      } else if (context.type === 'TEXT' && context.content && !context.isProcessed) {
+      } else if (context.type === 'TEXT' && context.content) {
         await memoryManager.seedCompanionKnowledgeFromText(companion.id, [
           { title: context.title, content: context.content }
         ]);
 
-        // Mark as processed
-        await prismadb.companionContext.update({
-          where: { id: context.id },
-          data: { isProcessed: true },
-        });
-      } else if (context.type === 'LINK' && context.url && !context.isProcessed) {
+      } else if (context.type === 'LINK' && context.url) {
         await memoryManager.seedCompanionKnowledgeFromLinks(companion.id, [
           { title: context.title, url: context.url }
         ]);
 
-        // Mark as processed
-        await prismadb.companionContext.update({
-          where: { id: context.id },
-          data: { isProcessed: true },
-        });
       }
     }
   } catch (error) {

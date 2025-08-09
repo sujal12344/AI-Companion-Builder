@@ -39,7 +39,7 @@ export const ChatMessages = ({
     <div className="flex-1 overflow-y-auto pr-4">
       <ChatMessage
         isLoading={isFakeLoading}
-        src={companion.src}
+        src={companion.img}
         role="system"
         content={`Hello, I am ${companion.name}, ${companion.description}`}
       />
@@ -48,10 +48,10 @@ export const ChatMessages = ({
           key={message.id}
           role={message.role}
           content={message.content}
-          src={companion.src}
+          src={companion.img}
         />
       ))}
-      {isLoading && <ChatMessage role="system" src={companion.src} isLoading />}
+      {isLoading && <ChatMessage role="system" src={companion.img} isLoading />}
       <div ref={scrollRef} />
     </div>
   );

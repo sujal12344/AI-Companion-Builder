@@ -79,7 +79,7 @@ const RootPage = async ({ searchParams }: rootPageProps) => {
         <ServerErrorFallback
           error="Database connection failed"
           title="Service Temporarily Unavailable"
-          description="We&apos;re experiencing technical difficulties. Please try again in a few moments."
+          description="We're experiencing technical difficulties. Please try again in a few moments."
         />
       </div>
     );

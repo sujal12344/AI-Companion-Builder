@@ -3,8 +3,13 @@ import { Pinecone } from "@pinecone-database/pinecone";
 import { PineconeStore } from "@langchain/pinecone";
 import { GoogleGenerativeAIEmbeddings } from '@langchain/google-genai';
 import { PDFLoader } from '@langchain/community/document_loaders/fs/pdf';
+import { DocxLoader } from '@langchain/community/document_loaders/fs/docx';
+import { CSVLoader } from '@langchain/community/document_loaders/fs/csv';
+import { JSONLoader } from "langchain/document_loaders/fs/json";
+import { TextLoader } from "langchain/document_loaders/fs/text";
 import { RecursiveCharacterTextSplitter } from '@langchain/textsplitters';
 import { scrapeWebContent } from './webScraper';
+import { ContextType } from "@prisma/client";
 
 export type CompanionKey = {
   companionName: string;
@@ -48,27 +53,51 @@ export class MemoryManager {
     }
   }
 
-  // Load and embed PDF content for a companion
-  public async seedCompanionKnowledgeFromPDF(companionId: string, pdfPath: string) {
+  // Load and embed document content for a companion
+  public async seedCompanionKnowledgeFromDocument(companionId: string, filePath: string, fileType: ContextType) {
     try {
       const pineconeIndex = this.pinecone.index(process.env.PINECONE_INDEX!);
 
-      // Check if already embedded for this specific PDF
+      // Check if already embedded for this specific document
       const existingDocs = await pineconeIndex.query({
         topK: 1,
         vector: await this.embeddings.embedQuery("test"),
-        filter: { companionId, source: pdfPath },
+        filter: { companionId, source: filePath },
         includeMetadata: true,
       });
 
       if (existingDocs.matches?.length > 0) {
-        console.log(`PDF ${pdfPath} already embedded for companion ${companionId}`);
+        console.log(`Document ${filePath} already embedded for companion ${companionId}`);
         return;
       }
 
-      // Load and process PDF
-      const loader = new PDFLoader(pdfPath);
-      const docs = await loader.load();
+      let docs;
+
+      // Load document based on file type
+      switch (fileType.toLowerCase()) {
+        case 'pdf':
+          const pdfLoader = new PDFLoader(filePath);
+          docs = await pdfLoader.load();
+          break;
+        case 'docx':
+          const docxLoader = new DocxLoader(filePath);
+          docs = await docxLoader.load();
+          break;
+        case 'txt':
+          const textLoader = new TextLoader(filePath);
+          docs = await textLoader.load();
+          break;
+        case 'csv':
+          const csvLoader = new CSVLoader(filePath);
+          docs = await csvLoader.load();
+          break;
+        case 'json':
+          const excelLoader = new JSONLoader(filePath);
+          docs = await excelLoader.load();
+          break;
+        default:
+          throw new Error(`Unsupported file type: ${fileType}`);
+      }
 
       const textSplitter = new RecursiveCharacterTextSplitter({
         chunkSize: 1000,
@@ -83,8 +112,8 @@ export class MemoryManager {
         metadata: {
           companionId,
           chunkIndex: index,
-          source: pdfPath,
-          type: 'PDF',
+          source: filePath,
+          type: fileType.toUpperCase(),
         }
       }));
 
@@ -93,9 +122,9 @@ export class MemoryManager {
         maxConcurrency: 5,
       });
 
-      console.log(`Embedded ${chunks.length} chunks for companion ${companionId} from PDF`);
+      console.log(`Embedded ${chunks.length} chunks for companion ${companionId} from ${fileType} document`);
     } catch (error) {
-      console.error("Failed to embed PDF:", error);
+      console.error(`Failed to embed ${fileType} document:`, error);
     }
   }
 

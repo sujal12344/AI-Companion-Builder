@@ -32,7 +32,7 @@ const CompanionCard = ({ item, userId }: CompanionCardProps) => {
             <Image
               width={128}
               height={128}
-              src={item.src}
+              src={item.img}
               alt="companion"
               className="rounded-xl object-cover max-h-32"
             />

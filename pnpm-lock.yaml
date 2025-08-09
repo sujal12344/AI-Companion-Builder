@@ -36,7 +36,7 @@ importers:
         specifier: ^6.1.2
         version: 6.1.2
       '@prisma/client':
-        specifier: ^6.3.1
+        specifier: ^6.13.0
         version: 6.13.0(prisma@6.13.0(typescript@5.8.3))(typescript@5.8.3)
       '@radix-ui/react-avatar':
         specifier: ^1.1.0

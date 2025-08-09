@@ -7,7 +7,7 @@ import CompanionSkeleton from "@/components/companionsSkeleton";
 import { currentUser } from "@clerk/nextjs/server";
 
 // Force dynamic rendering for this page
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 interface rootPageProps {
   searchParams: Promise<{
@@ -24,10 +24,8 @@ const StorePage = async ({ searchParams }: rootPageProps) => {
     const data = await prismadb.companion.findMany({
       where: {
         categoryId: categoryId,
-        name: {
-          search: name,
-        },
         userId: user?.id,
+        name,
       },
       orderBy: {
         createdAt: "asc",
@@ -45,7 +43,9 @@ const StorePage = async ({ searchParams }: rootPageProps) => {
 
     return (
       <div className="h-full p-4 space-y-2">
-        <div className="text-2xl font-semibold mb-4">Your Created Companions</div>
+        <div className="text-2xl font-semibold mb-4">
+          Your Created Companions
+        </div>
         <SearchInput />
         <Categories data={categories} />
         <Suspense fallback={<CompanionSkeleton />}>
@@ -54,10 +54,12 @@ const StorePage = async ({ searchParams }: rootPageProps) => {
       </div>
     );
   } catch (error) {
-    console.error('Store page error:', error);
+    console.error("Store page error:", error);
     return (
       <div className="h-full p-4 space-y-2">
-        <div className="text-2xl font-semibold mb-4">Your Created Companions</div>
+        <div className="text-2xl font-semibold mb-4">
+          Your Created Companions
+        </div>
         <SearchInput />
         <div className="flex flex-col items-center justify-center min-h-[60vh] p-8 text-center">
           <div className="relative mb-6">
@@ -68,9 +70,12 @@ const StorePage = async ({ searchParams }: rootPageProps) => {
               <span className="text-white text-xs">!</span>
             </div>
           </div>
-          <h3 className="text-xl font-semibold text-primary mb-3">Unable to Load Store</h3>
+          <h3 className="text-xl font-semibold text-primary mb-3">
+            Unable to Load Store
+          </h3>
           <p className="text-muted-foreground mb-4 max-w-sm">
-            We&apos;re having trouble loading your companions. Please try refreshing the page.
+            We&apos;re having trouble loading your companions. Please try
+            refreshing the page.
           </p>
         </div>
       </div>

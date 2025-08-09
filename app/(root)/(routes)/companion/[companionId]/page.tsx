@@ -16,10 +16,10 @@ const CompanionPage = async ({ params }: companionPageProps) => {
     redirect("/sign-in");
   }
 
-  const isPro = await checkSubscription();
-  if (!isPro) {
-    redirect("/settings");
-  }
+  // const isPro = await checkSubscription();
+  // if (!isPro) {
+  //   redirect("/settings");
+  // }
 
   const { companionId } = await params;
 
@@ -31,6 +31,7 @@ const CompanionPage = async ({ params }: companionPageProps) => {
   });
 
   const categories = await prismadb.category.findMany();
+  console.log({categories});
 
   return <CompanionForm initialData={companion} categories={categories} />;
 };

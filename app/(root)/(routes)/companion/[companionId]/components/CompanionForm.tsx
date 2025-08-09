@@ -3,7 +3,7 @@
 import z from "zod";
 import axios from "axios";
 
-import { Category, Companion } from "@prisma/client";
+import { Category, Companion, ContextType } from "@prisma/client";
 import { useForm } from "react-hook-form";
 import { Wand2 } from "lucide-react";
 
@@ -37,7 +37,7 @@ import { Suspense, useState } from "react";
 import { ContextUpload, ContextItem } from "@/components/ContextUpload";
 
 interface CompanionFormProps {
-  initialData: (Companion & { contexts?: any[] }) | null;
+  initialData: (Companion & { contexts?: ContextItem[] }) | null;
   categories: Category[];
 }
 
@@ -64,18 +64,28 @@ const formSchema = z.object({
   description: z.string().min(1, {
     message: "Description is required.",
   }),
-  instructions: z.string().min(200, {
-    message: "Instructions required at least 200 characters.",
+  instructions: z.string().min(20, {
+    message: "Instructions required at least 20 characters.",
   }),
-  seed: z.string().min(200, {
-    message: "Seed required at least 200 characters.",
+  seed: z.string().min(20, {
+    message: "Seed required at least 20 characters.",
   }),
-  src: z.string().min(1, {
+  img: z.string().min(1, {
     message: "Image is required",
   }),
   categoryId: z.string().min(1, {
     message: "Category  is required",
   }),
+  contexts: z
+    .array(
+      z.object({
+        type: z.nativeEnum(ContextType),
+        title: z.string(),
+        content: z.string().optional(),
+        url: z.string().optional(),
+      })
+    )
+    .optional(),
 });
 
 export const CompanionForm = ({
@@ -88,7 +98,7 @@ export const CompanionForm = ({
   // Initialize contexts from existing data
   const [contexts, setContexts] = useState<ContextItem[]>(() => {
     if (initialData?.contexts) {
-      return initialData.contexts.map((ctx: any) => ({
+      return initialData.contexts.map((ctx: ContextItem) => ({
         id: ctx.id,
         type: ctx.type,
         title: ctx.title,
@@ -101,21 +111,25 @@ export const CompanionForm = ({
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: initialData ? {
-      name: initialData.name,
-      description: initialData.description,
-      instructions: initialData.instructions || "",
-      seed: initialData.seed || "",
-      src: initialData.src,
-      categoryId: initialData.categoryId,
-    } : {
-      name: "",
-      description: "",
-      instructions: "",
-      seed: "",
-      src: "",
-      categoryId: "",
-    },
+    defaultValues: initialData
+      ? {
+          name: initialData.name,
+          description: initialData.description,
+          instructions: initialData.instructions || "",
+          seed: initialData.seed || "",
+          img: initialData.img,
+          categoryId: initialData.categoryId,
+          contexts: initialData.contexts || [],
+        }
+      : {
+          name: "",
+          description: "",
+          instructions: "",
+          seed: "",
+          img: "",
+          categoryId: "",
+          contexts: [],
+        },
   });
 
   const isLoading = form.formState.isSubmitting;
@@ -124,18 +138,26 @@ export const CompanionForm = ({
     try {
       const formData = new FormData();
 
-      // Add form values
       Object.entries(values).forEach(([key, value]) => {
-        formData.append(key, value);
+        if (key === "contexts") {
+          if (Array.isArray(value)) {
+            formData.append("contexts", JSON.stringify(value));
+          }
+        } else {
+          formData.append(key, value as string)
+        }
       });
 
-      // Add contexts
-      formData.append('contexts', JSON.stringify(contexts));
-
-      // Add PDF files
+      // Add files for document contexts
       contexts.forEach((context, index) => {
-        if (context.type === 'PDF' && context.file) {
-          formData.append(`pdf_${index}`, context.file);
+        if (['PDF', 'DOCX', 'TXT', 'CSV', 'JSON'].includes(context.type) && context.file) {
+          formData.append(`file_${index}`, context.file);
+          // Also add file metadata
+          formData.append(`file_metadata_${index}`, JSON.stringify({
+            type: context.type,
+            title: context.title,
+            fileName: context.file.name
+          }));
         }
       });
 
@@ -186,7 +208,7 @@ export const CompanionForm = ({
             </div>
             <FormField
               control={form.control}
-              name="src"
+              name="img"
               render={({ field }) => (
                 <FormItem className="flex flex-col items-center justify-center space-y-4">
                   {/* <FormItem className="flex flex-col items-center justify-center space-y-4 col-span-2"> */}
@@ -253,7 +275,7 @@ export const CompanionForm = ({
                       onValueChange={field.onChange}
                       value={field.value}
                       defaultValue={field.value}
-                    // autoComplete="on"
+                      // autoComplete="on"
                     >
                       <FormControl>
                         <SelectTrigger className="bg-background">

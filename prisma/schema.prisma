@@ -1,6 +1,5 @@
 generator client {
-  provider        = "prisma-client-js"
-  previewFeatures = ["fullTextSearchPostgres"]
+  provider = "prisma-client-js"
 }
 
 datasource db {
@@ -19,7 +18,7 @@ model Companion {
   id          String @id @default(uuid())
   userId      String
   userName    String
-  src         String
+  img         String
   name        String @db.Text
   description String @db.Text
 
@@ -41,24 +40,31 @@ model Companion {
 
 enum ContextType {
   PDF
+  DOCX
+  TXT
+  JSON
+  CSV
   LINK
   TEXT
 }
 
 model CompanionContext {
-  id          String      @id @default(uuid())
-  type        ContextType
-  title       String
-  content     String?     @db.Text // For TEXT type
-  url         String? // For LINK type
-  fileName    String? // For PDF type
-  filePath    String? // For PDF type
-  isProcessed Boolean     @default(false)
+  id    String      @id @default(uuid())
+  type  ContextType
+  title String
+
+  //for Document types
+  content  String? @db.Text
+  fileName String?
+  filePath String?
+
+  //for Link type
+  url String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  companion   Companion @relation(fields: [companionId], references: [id], onDelete: Cascade)
+  companion   Companion @relation(fields: [companionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   companionId String
 
   @@index([companionId])
