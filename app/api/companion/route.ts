@@ -86,31 +86,33 @@ export async function POST(req: NextRequest) {
           case "TEXT":
             contextData.content = context.content;
             break;
-        
+
           case "LINK":
             contextData.url = context.url;
             break;
-        
+
           default:
             if (contextTypeArray.includes(context.type)) {
               const file = formData.get(`file_${i}`) as File;
               if (file) {
                 const companionsDir = path.join(process.cwd(), "companions");
                 await mkdir(companionsDir, { recursive: true });
-        
+
                 const fileExtension = context.type.toLowerCase();
-                const sanitizedTitle = context.title.replace(/[^a-zA-Z0-9]/g, "_");
+                const sanitizedTitle = context.title.replace(
+                  /[^a-zA-Z0-9]/g,
+                  "_"
+                );
                 const fileName = `${companion.id}_${sanitizedTitle}.${fileExtension}`;
                 const filePath = path.join(companionsDir, fileName);
-        
+
                 const bytes = await file.arrayBuffer();
                 await writeFile(filePath, new Uint8Array(bytes));
-        
+
                 contextData.fileName = fileName;
                 contextData.filePath = filePath;
-        
+
                 // Immediately embed this document
-                const memoryManager = await MemoryManager.getInstance();
                 await memoryManager.seedCompanionKnowledgeFromDocument(
                   companion.id,
                   filePath,
@@ -120,7 +122,6 @@ export async function POST(req: NextRequest) {
             }
             break;
         }
-        
 
         // Save context to database
         await prismadb.companionContext.create({
@@ -129,19 +130,24 @@ export async function POST(req: NextRequest) {
       }
 
       // Process text contexts with RAG
-      const textContexts = parsedContexts.filter((ctx) => ctx.type === "TEXT" && ctx.content);
+      const textContexts = parsedContexts.filter(
+        (ctx) => ctx.type === "TEXT" && ctx.content
+      );
       if (textContexts.length > 0) {
-        const memoryManager = await MemoryManager.getInstance();
         await memoryManager.seedCompanionKnowledgeFromText(
           companion.id,
-          textContexts.map((ctx) => ({ title: ctx.title, content: ctx.content! }))
+          textContexts.map((ctx) => ({
+            title: ctx.title,
+            content: ctx.content!,
+          }))
         );
       }
 
       // Process link contexts with RAG
-      const linkContexts = parsedContexts.filter((ctx) => ctx.type === "LINK" && ctx.url);
+      const linkContexts = parsedContexts.filter(
+        (ctx) => ctx.type === "LINK" && ctx.url
+      );
       if (linkContexts.length > 0) {
-        const memoryManager = await MemoryManager.getInstance();
         await memoryManager.seedCompanionKnowledgeFromLinks(
           companion.id,
           linkContexts.map((ctx) => ({ title: ctx.title, url: ctx.url! }))

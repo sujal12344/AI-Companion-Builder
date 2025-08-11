@@ -162,15 +162,18 @@ async function loadCompanionContexts(
 
         default:
           if (contextTypeArray.includes(context.type) && context.filePath) {
-            if (fs.existsSync(context.filePath)) {
+            try {
+              await fs.promises.access(context.filePath);
               await memoryManager.seedCompanionKnowledgeFromDocument(
                 companion.id,
                 context.filePath,
                 context.type
               );
+            } catch (err) {
+              // File doesn't exist or is not accessible
+              console.warn(`Context file not accessible: ${context.filePath}`);
             }
-          }
-          break;
+          }          break;
       }
     }
   } catch (error) {
@@ -209,11 +212,10 @@ async function getRelevantContext(
 
 // Helper function to generate AI response
 async function generateAIResponse(
-  companion: any,
+  companion: Companion,
   relevantContext: string,
   recentChatHistory: string
-) {
-  try {
+) {  try {
     const groq = new Groq({
       apiKey: process.env.GROQ_API_KEY,
     });

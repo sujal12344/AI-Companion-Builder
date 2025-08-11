@@ -1,7 +1,16 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { X, Upload, Link, FileText, Plus, File, FileSpreadsheet, FileJson } from "lucide-react";
+import {
+  X,
+  Upload,
+  Link,
+  FileText,
+  Plus,
+  File,
+  FileSpreadsheet,
+  FileJson,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -32,19 +41,20 @@ interface ContextUploadProps {
 }
 
 const SUPPORTED_FILE_TYPES = {
-  'application/pdf': 'PDF',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'DOCX',
-  'application/json': 'JSON',
-  'text/plain': 'TXT',
-  'text/csv': 'CSV',
+  "application/pdf": "PDF",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+    "DOCX",
+  "application/json": "JSON",
+  "text/plain": "TXT",
+  "text/csv": "CSV",
 };
 
 const FILE_EXTENSIONS = {
-  '.pdf': 'PDF',
-  '.docx': 'DOCX',
-  '.txt': 'TXT',
-  '.csv': 'CSV',
-  '.json': 'JSON',
+  ".pdf": "PDF",
+  ".docx": "DOCX",
+  ".txt": "TXT",
+  ".csv": "CSV",
+  ".json": "JSON",
 };
 
 export const ContextUpload = ({
@@ -63,26 +73,28 @@ export const ContextUpload = ({
   const getFileType = (file: File): string | null => {
     // Check MIME type first
     if (SUPPORTED_FILE_TYPES[file.type as keyof typeof SUPPORTED_FILE_TYPES]) {
-      console.log(SUPPORTED_FILE_TYPES[file.type as keyof typeof SUPPORTED_FILE_TYPES], "jyh")
-      return SUPPORTED_FILE_TYPES[file.type as keyof typeof SUPPORTED_FILE_TYPES];
+      return SUPPORTED_FILE_TYPES[
+        file.type as keyof typeof SUPPORTED_FILE_TYPES
+      ];
     }
-    
+
     // Check file extension
-    const extension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
+    const extension = file.name
+      .toLowerCase()
+      .substring(file.name.lastIndexOf("."));
     if (FILE_EXTENSIONS[extension as keyof typeof FILE_EXTENSIONS]) {
-      console.log(FILE_EXTENSIONS[extension as keyof typeof FILE_EXTENSIONS], "ythgvhb")
       return FILE_EXTENSIONS[extension as keyof typeof FILE_EXTENSIONS];
     }
-    
+
     return null;
   };
 
   const handleFileDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setIsDragOver(false);
-    
+
     const files = Array.from(e.dataTransfer.files);
-    const validFiles = files.filter(file => {
+    const validFiles = files.filter((file) => {
       const fileType = getFileType(file);
       return fileType !== null;
     });
@@ -171,12 +183,29 @@ export const ContextUpload = ({
     }
   };
 
+  const getAcceptAttribute = (contextType: ContextType): string => {
+    const typeMap = {
+      PDF: ".pdf,application/pdf",
+      DOCX: ".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      TXT: ".txt,text/plain",
+      CSV: ".csv,text/csv",
+      JSON: ".json,application/json",
+    };
+    return (
+      typeMap[contextType as keyof typeof typeMap] ||
+      ".pdf,.docx,.txt,.csv,.json,.pdf,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,text/csv,application/json"
+    );
+  };
+
   return (
     <div className="space-y-4">
       <div className="space-y-4">
-        <Label className="text-base font-medium">Context Sources (Optional)</Label>
+        <Label className="text-base font-medium">
+          Context Sources (Optional)
+        </Label>
         <p className="text-sm text-muted-foreground">
-          Add documents (PDF, DOCX, TXT, JSON, CSV), links, or text content to enhance your companion's knowledge
+          Add documents (PDF, DOCX, TXT, JSON, CSV), links, or text content to
+          enhance your companion's knowledge
         </p>
 
         {/* Add new context form */}
@@ -252,7 +281,11 @@ export const ContextUpload = ({
               </div>
             )}
 
-            {(newContext.type === "PDF" || newContext.type === "DOCX" || newContext.type === "TXT"|| newContext.type === "CSV" || newContext.type === "JSON") && (
+            {(newContext.type === "PDF" ||
+              newContext.type === "DOCX" ||
+              newContext.type === "TXT" ||
+              newContext.type === "CSV" ||
+              newContext.type === "JSON") && (
               <div>
                 <Label>Document File</Label>
                 <div
@@ -267,13 +300,16 @@ export const ContextUpload = ({
                 >
                   <Upload className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
                   <p className="text-sm text-muted-foreground mb-2">
-                    Drag and drop your {newContext.type} file here, or click to browse
+                    Drag and drop your {newContext.type} file here, or click to
+                    browse
                   </p>
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={() => document.getElementById('file-upload')?.click()}
+                    onClick={() =>
+                      document.getElementById("file-upload")?.click()
+                    }
                     disabled={disabled}
                   >
                     Choose File
@@ -283,21 +319,16 @@ export const ContextUpload = ({
                     type="file"
                     className="hidden"
                     onChange={handleFileChange}
-                    accept={
-                      newContext.type === 'PDF' ? '.pdf,application/pdf' :
-                      newContext.type === 'DOCX' ? '.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document' :
-                      newContext.type === 'TXT' ? '.txt,text/plain' :
-                      newContext.type === 'CSV' ? '.csv,text/csv' :
-                      newContext.type === 'JSON' ? '.json,application/json' :
-                      '.pdf,.docx,.txt,.csv,.json'
-                    }
+                    accept={getAcceptAttribute(newContext.type)}
                     aria-label="Upload context file"
                     title="Upload context file"
                   />
                 </div>
                 {newContext.file && (
                   <div className="mt-2 p-2 bg-muted rounded-md">
-                    <p className="text-sm font-medium">{newContext.file.name}</p>
+                    <p className="text-sm font-medium">
+                      {newContext.file.name}
+                    </p>
                     <p className="text-xs text-muted-foreground">
                       {(newContext.file.size / 1024 / 1024).toFixed(2)} MB
                     </p>
@@ -333,10 +364,18 @@ export const ContextUpload = ({
                     <p className="font-medium text-sm">{context.title}</p>
                     <p className="text-xs text-muted-foreground">
                       {context.type === "LINK" && context.url}
-                      {(context.type === "PDF" || context.type === "DOCX" || context.type === "TXT" || context.type === "CSV" || context.type === "JSON") && context.file?.name}
+                      {(context.type === "PDF" ||
+                        context.type === "DOCX" ||
+                        context.type === "TXT" ||
+                        context.type === "CSV" ||
+                        context.type === "JSON") &&
+                        context.file?.name}
                       {context.type === "TEXT" &&
-                        `${context.content?.slice(0, 50)}${context.content && context.content.length > 50 ? '...' : ''}`
-                      }
+                        `${context.content?.slice(0, 50)}${
+                          context.content && context.content.length > 50
+                            ? "..."
+                            : ""
+                        }`}
                     </p>
                   </div>
                 </div>
