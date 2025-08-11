@@ -6,6 +6,7 @@ import path from "path";
 import { MemoryManager } from "@/lib/memory";
 import { ContextItem } from "@/components/ContextUpload";
 import { ContextType } from "@prisma/client";
+import { contextTypeArray } from "@/app/constants/contextType";
 
 export async function POST(req: NextRequest) {
   try {
@@ -65,7 +66,8 @@ export async function POST(req: NextRequest) {
       const memoryManager = await MemoryManager.getInstance();
 
       // Create contexts in database and process files
-      for (const context of parsedContexts) {
+      for (let i = 0; i < parsedContexts.length; i++) {
+        const context = parsedContexts[i];
         let contextData: {
           companionId: string;
           type: ContextType;
@@ -80,106 +82,45 @@ export async function POST(req: NextRequest) {
           title: context.title,
         };
 
-        if (context.type === "TEXT") {
-          contextData.content = context.content;
-        } else if (context.type === "LINK") {
-          contextData.url = context.url;
-        } else if (context.type === "PDF") {
-          const pdfFile = formData.get(`pdf_${context.title}`) as File;
-          if (pdfFile) {
-            // Save PDF file
-            const companionsDir = path.join(process.cwd(), "companions");
-            await mkdir(companionsDir, { recursive: true });
-
-            const fileName = `${companion.id}_${context.title.replace(
-              /[^a-zA-Z0-9]/g,
-              "_"
-            )}.pdf`;
-            const filePath = path.join(companionsDir, fileName);
-
-            const bytes = await pdfFile.arrayBuffer();
-            await writeFile(filePath, new Uint8Array(bytes));
-
-            contextData.fileName = fileName;
-            contextData.filePath = filePath;
-          }
-        } else if (context.type === "JSON") {
-          const jsonFile = formData.get(`json_${context.title}`) as File;
-          if (jsonFile) {
-            // Save JSON file
-            const companionsDir = path.join(process.cwd(), "companions");
-            await mkdir(companionsDir, { recursive: true });
-
-            const fileName = `${companion.id}_${context.title.replace(
-              /[^a-zA-Z0-9]/g,
-              "_"
-            )}.json`;
-            const filePath = path.join(companionsDir, fileName);
-
-            const bytes = await jsonFile.arrayBuffer();
-            await writeFile(filePath, new Uint8Array(bytes));
-
-            contextData.fileName = fileName;
-            contextData.filePath = filePath;
-          }
-        } else if (context.type === "CSV") {
-          const csvFile = formData.get(`csv_${context.title}`) as File;
-          if (csvFile) {
-            // Save CSV file
-            const companionsDir = path.join(process.cwd(), "companions");
-            await mkdir(companionsDir, { recursive: true });
-
-            const fileName = `${companion.id}_${context.title.replace(
-              /[^a-zA-Z0-9]/g,
-              "_"
-            )}.csv`;
-            const filePath = path.join(companionsDir, fileName);
-
-            const bytes = await csvFile.arrayBuffer();
-            await writeFile(filePath, new Uint8Array(bytes));
-
-            contextData.fileName = fileName;
-            contextData.filePath = filePath;
-          }
-        } else if (context.type === "DOCX") {
-          const docxFile = formData.get(`docx_${context.title}`) as File;
-          if (docxFile) {
-            // Save DOCX file
-            const companionsDir = path.join(process.cwd(), "companions");
-            await mkdir(companionsDir, { recursive: true });
-
-            const fileName = `${companion.id}_${context.title.replace(
-              /[^a-zA-Z0-9]/g,
-              "_"
-            )}.docx`;
-            const filePath = path.join(companionsDir, fileName);
-
-            const bytes = await docxFile.arrayBuffer();
-            await writeFile(filePath, new Uint8Array(bytes));
-
-            contextData.fileName = fileName;
-            contextData.filePath = filePath;
-          }
-        } else if (context.type === "TXT") {
-          const txtFile = formData.get(`txt_${context.title}`) as File;
-          if (txtFile) {
-            // Save TXT file
-            const companionsDir = path.join(process.cwd(), "companions");
-            await mkdir(companionsDir, { recursive: true });
-
-            const fileName = `${companion.id}_${context.title.replace(
-              /[^a-zA-Z0-9]/g,
-              "_"
-            )}.txt`;
-            const filePath = path.join(companionsDir, fileName);
-
-            const bytes = await txtFile.arrayBuffer();
-            await writeFile(filePath, new Uint8Array(bytes));
-
-            contextData.fileName = fileName;
-            contextData.filePath = filePath;
-          }
+        switch (context.type) {
+          case "TEXT":
+            contextData.content = context.content;
+            break;
+        
+          case "LINK":
+            contextData.url = context.url;
+            break;
+        
+          default:
+            if (contextTypeArray.includes(context.type)) {
+              const file = formData.get(`file_${i}`) as File;
+              if (file) {
+                const companionsDir = path.join(process.cwd(), "companions");
+                await mkdir(companionsDir, { recursive: true });
+        
+                const fileExtension = context.type.toLowerCase();
+                const sanitizedTitle = context.title.replace(/[^a-zA-Z0-9]/g, "_");
+                const fileName = `${companion.id}_${sanitizedTitle}.${fileExtension}`;
+                const filePath = path.join(companionsDir, fileName);
+        
+                const bytes = await file.arrayBuffer();
+                await writeFile(filePath, new Uint8Array(bytes));
+        
+                contextData.fileName = fileName;
+                contextData.filePath = filePath;
+        
+                // Immediately embed this document
+                const memoryManager = await MemoryManager.getInstance();
+                await memoryManager.seedCompanionKnowledgeFromDocument(
+                  companion.id,
+                  filePath,
+                  context.type
+                );
+              }
+            }
+            break;
         }
+        
 
         // Save context to database
         await prismadb.companionContext.create({
@@ -187,45 +128,24 @@ export async function POST(req: NextRequest) {
         });
       }
 
-      // Process contexts with RAG (outside the loop)
-      // Process text contexts
-      const textContexts = parsedContexts.filter(
-        (ctx) => ctx.type === "TEXT" && ctx.content
-      );
+      // Process text contexts with RAG
+      const textContexts = parsedContexts.filter((ctx) => ctx.type === "TEXT" && ctx.content);
       if (textContexts.length > 0) {
+        const memoryManager = await MemoryManager.getInstance();
         await memoryManager.seedCompanionKnowledgeFromText(
           companion.id,
-          textContexts.map((ctx) => ({
-            title: ctx.title,
-            content: ctx.content!,
-          }))
+          textContexts.map((ctx) => ({ title: ctx.title, content: ctx.content! }))
         );
       }
 
-      // Process link contexts
-      const linkContexts = parsedContexts.filter(
-        (ctx) => ctx.type === "LINK" && ctx.url
-      );
+      // Process link contexts with RAG
+      const linkContexts = parsedContexts.filter((ctx) => ctx.type === "LINK" && ctx.url);
       if (linkContexts.length > 0) {
+        const memoryManager = await MemoryManager.getInstance();
         await memoryManager.seedCompanionKnowledgeFromLinks(
           companion.id,
           linkContexts.map((ctx) => ({ title: ctx.title, url: ctx.url! }))
         );
-      }
-
-      // Process document contexts
-      const documentContexts = parsedContexts.filter((ctx) =>
-        ["PDF", "DOCX", "TXT", "CSV", "JSON"].includes(ctx.type)
-      );
-      for (const context of documentContexts) {
-        if (context.file) {
-          const fileType = context.type;
-          await memoryManager.seedCompanionKnowledgeFromDocument(
-            companion.id,
-            context.file.name,
-            fileType
-          );
-        }
       }
     }
 

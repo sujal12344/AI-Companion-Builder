@@ -278,6 +278,22 @@ export const ContextUpload = ({
                   >
                     Choose File
                   </Button>
+                  <input
+                    id="file-upload"
+                    type="file"
+                    className="hidden"
+                    onChange={handleFileChange}
+                    accept={
+                      newContext.type === 'PDF' ? '.pdf,application/pdf' :
+                      newContext.type === 'DOCX' ? '.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document' :
+                      newContext.type === 'TXT' ? '.txt,text/plain' :
+                      newContext.type === 'CSV' ? '.csv,text/csv' :
+                      newContext.type === 'JSON' ? '.json,application/json' :
+                      '.pdf,.docx,.txt,.csv,.json'
+                    }
+                    aria-label="Upload context file"
+                    title="Upload context file"
+                  />
                 </div>
                 {newContext.file && (
                   <div className="mt-2 p-2 bg-muted rounded-md">

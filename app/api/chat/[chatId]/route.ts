@@ -1,21 +1,22 @@
 import { StreamingTextResponse } from "ai";
 import { currentUser } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
-import fs from 'fs';
-import path from 'path';
+import fs from "fs";
+import path from "path";
 
 import prismadb from "@/lib/prismadb";
 import { MemoryManager } from "@/lib/memory";
 import { rateLimit } from "@/lib/rateLimit";
 import Groq from "groq-sdk";
 import { Companion } from "@prisma/client";
+import { contextTypeArray } from "@/app/constants/contextType";
 
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ chatId: string }> }
 ) {
   try {
-    const { prompt: userQuery } = await request.json() as { prompt: string };
+    const { prompt: userQuery } = (await request.json()) as { prompt: string };
     const user = await currentUser();
 
     // Validate user and query
@@ -30,7 +31,6 @@ export async function POST(
     if (!success) {
       return new NextResponse("Rate limit exceeded", { status: 429 });
     }
-
 
     // Get companion and save user message
     const companion = await prismadb.companion.update({
@@ -61,7 +61,11 @@ export async function POST(
     // Seed initial chat history if empty
     const chatHistory = await memoryManager.readLatestHistory(companionKey);
     if (!chatHistory) {
-      await memoryManager.seedChatHistory(companion.seed || "", "\n\n", companionKey);
+      await memoryManager.seedChatHistory(
+        companion.seed || "",
+        "\n\n",
+        companionKey
+      );
     }
 
     // Load companion's knowledge from contexts
@@ -71,16 +75,29 @@ export async function POST(
     await memoryManager.writeToHistory(`User: ${userQuery}\n`, companionKey);
 
     // Get recent chat history and relevant context from all sources
-    const recentChatHistory = await memoryManager.readLatestHistory(companionKey);
-    const relevantContext = await getRelevantContext(memoryManager, userQuery, companion.id);
+    const recentChatHistory = await memoryManager.readLatestHistory(
+      companionKey
+    );
+    const relevantContext = await getRelevantContext(
+      memoryManager,
+      userQuery,
+      companion.id
+    );
 
     // Generate AI response using Groq
-    const aiResponse = await generateAIResponse(companion, relevantContext, recentChatHistory);
+    const aiResponse = await generateAIResponse(
+      companion,
+      relevantContext,
+      recentChatHistory
+    );
 
     // Save AI response and return stream
     if (aiResponse?.trim()) {
       // Save to chat history
-      await memoryManager.writeToHistory(`${companion.name}: ${aiResponse.trim()}\n`, companionKey);
+      await memoryManager.writeToHistory(
+        `${companion.name}: ${aiResponse.trim()}\n`,
+        companionKey
+      );
 
       // Save to database
       await prismadb.companion.update({
@@ -115,7 +132,10 @@ export async function POST(
 }
 
 // Helper function to load companion contexts
-async function loadCompanionContexts(memoryManager: MemoryManager, companion: Companion) {
+async function loadCompanionContexts(
+  memoryManager: MemoryManager,
+  companion: Companion
+) {
   try {
     // Get all contexts for this companion
     const contexts = await prismadb.companionContext.findMany({
@@ -123,21 +143,34 @@ async function loadCompanionContexts(memoryManager: MemoryManager, companion: Co
     });
 
     for (const context of contexts) {
-      if (['PDF', 'DOCX', 'TXT', 'CSV'].includes(context.type) && context.filePath) {
-        if (fs.existsSync(context.filePath)) {
-          await memoryManager.seedCompanionKnowledgeFromDocument(companion.id, context.filePath, context.type.toLowerCase());
+      switch (context.type) {
+        case "TEXT":
+          if (context.content) {
+            await memoryManager.seedCompanionKnowledgeFromText(companion.id, [
+              { title: context.title, content: context.content },
+            ]);
+          }
+          break;
 
-        }
-      } else if (context.type === 'TEXT' && context.content) {
-        await memoryManager.seedCompanionKnowledgeFromText(companion.id, [
-          { title: context.title, content: context.content }
-        ]);
+        case "LINK":
+          if (context.url) {
+            await memoryManager.seedCompanionKnowledgeFromLinks(companion.id, [
+              { title: context.title, url: context.url },
+            ]);
+          }
+          break;
 
-      } else if (context.type === 'LINK' && context.url) {
-        await memoryManager.seedCompanionKnowledgeFromLinks(companion.id, [
-          { title: context.title, url: context.url }
-        ]);
-
+        default:
+          if (contextTypeArray.includes(context.type) && context.filePath) {
+            if (fs.existsSync(context.filePath)) {
+              await memoryManager.seedCompanionKnowledgeFromDocument(
+                companion.id,
+                context.filePath,
+                context.type
+              );
+            }
+          }
+          break;
       }
     }
   } catch (error) {
@@ -146,16 +179,23 @@ async function loadCompanionContexts(memoryManager: MemoryManager, companion: Co
 }
 
 // Helper function to get relevant context from all sources
-async function getRelevantContext(memoryManager: MemoryManager, userQuery: string, companionId: string) {
+async function getRelevantContext(
+  memoryManager: MemoryManager,
+  userQuery: string,
+  companionId: string
+) {
   try {
-    const similarDocs = await memoryManager.vectorSearch(userQuery, companionId);
+    const similarDocs = await memoryManager.vectorSearch(
+      userQuery,
+      companionId
+    );
 
     if (similarDocs?.length > 0) {
       return similarDocs
-        .map(doc => {
-          const source = doc.metadata?.type || 'Unknown';
-          const title = doc.metadata?.title || '';
-          return `[${source}${title ? ` - ${title}` : ''}]: ${doc.pageContent}`;
+        .map((doc) => {
+          const source = doc.metadata?.type || "Unknown";
+          const title = doc.metadata?.title || "";
+          return `[${source}${title ? ` - ${title}` : ""}]: ${doc.pageContent}`;
         })
         .join("\n\n");
     }
@@ -168,7 +208,11 @@ async function getRelevantContext(memoryManager: MemoryManager, userQuery: strin
 }
 
 // Helper function to generate AI response
-async function generateAIResponse(companion: any, relevantContext: string, recentChatHistory: string) {
+async function generateAIResponse(
+  companion: any,
+  relevantContext: string,
+  recentChatHistory: string
+) {
   try {
     const groq = new Groq({
       apiKey: process.env.GROQ_API_KEY,

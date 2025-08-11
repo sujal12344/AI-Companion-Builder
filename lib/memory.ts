@@ -74,26 +74,26 @@ export class MemoryManager {
       let docs;
 
       // Load document based on file type
-      switch (fileType.toLowerCase()) {
-        case 'pdf':
+      switch (fileType) {
+        case 'PDF':
           const pdfLoader = new PDFLoader(filePath);
           docs = await pdfLoader.load();
           break;
-        case 'docx':
+        case 'DOCX':
           const docxLoader = new DocxLoader(filePath);
           docs = await docxLoader.load();
           break;
-        case 'txt':
+        case 'TXT':
           const textLoader = new TextLoader(filePath);
           docs = await textLoader.load();
           break;
-        case 'csv':
+        case 'CSV':
           const csvLoader = new CSVLoader(filePath);
           docs = await csvLoader.load();
           break;
-        case 'json':
-          const excelLoader = new JSONLoader(filePath);
-          docs = await excelLoader.load();
+        case 'JSON':
+          const jsonLoader = new JSONLoader(filePath);
+          docs = await jsonLoader.load();
           break;
         default:
           throw new Error(`Unsupported file type: ${fileType}`);

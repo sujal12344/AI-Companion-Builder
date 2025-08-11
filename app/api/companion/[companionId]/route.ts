@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { currentUser } from "@clerk/nextjs/server";
 import prismadb from "@/lib/prismadb";
-import { writeFile, mkdir } from 'fs/promises';
-import path from 'path';
+import { writeFile, mkdir } from "fs/promises";
+import path from "path";
 import { MemoryManager } from "@/lib/memory";
+import { contextTypeArray } from "@/app/constants/contextType";
 
 export async function POST(req: NextRequest) {
   try {
@@ -14,15 +15,22 @@ export async function POST(req: NextRequest) {
 
     const formData = await req.formData();
 
-    const name = formData.get('name') as string;
-    const description = formData.get('description') as string;
-    const instructions = formData.get('instructions') as string;
-    const seed = formData.get('seed') as string;
-    const img = formData.get('img') as string;
-    const categoryId = formData.get('categoryId') as string;
-    const contextsJson = formData.get('contexts') as string;
+    const name = formData.get("name") as string;
+    const description = formData.get("description") as string;
+    const instructions = formData.get("instructions") as string;
+    const seed = formData.get("seed") as string;
+    const img = formData.get("img") as string;
+    const categoryId = formData.get("categoryId") as string;
+    const contextsJson = formData.get("contexts") as string;
 
-    if (!name || !description || !instructions || !seed || !img || !categoryId) {
+    if (
+      !name ||
+      !description ||
+      !instructions ||
+      !seed ||
+      !img ||
+      !categoryId
+    ) {
       return new NextResponse("Missing required fields", { status: 400 });
     }
 
@@ -53,32 +61,45 @@ export async function POST(req: NextRequest) {
           title: context.title,
         };
 
-        if (context.type === 'TEXT') {
-          contextData.content = context.content;
-        } else if (context.type === 'LINK') {
-          contextData.url = context.url;
-        } else if (['PDF', 'DOC', 'DOCX', 'TXT', 'EXCEL', 'CSV'].includes(context.type)) {
-          const file = formData.get(`file_${i}`) as File;
-          if (file) {
-            // Save file
-            const companionsDir = path.join(process.cwd(), 'companions');
-            await mkdir(companionsDir, { recursive: true });
-
-            const fileExtension = context.type.toLowerCase();
-            const fileName = `${companion.id}_${context.title.replace(/[^a-zA-Z0-9]/g, '_')}.${fileExtension}`;
-            const filePath = path.join(companionsDir, fileName);
-
-            const bytes = await file.arrayBuffer();
-            await writeFile(filePath, new Uint8Array(bytes));
-
-            contextData.fileName = fileName;
-            contextData.filePath = filePath;
-            contextData.fileType = fileExtension;
-
-            // Process document with RAG
-            await memoryManager.seedCompanionKnowledgeFromDocument(companion.id, filePath, fileExtension);
-          }
+        switch (context.type) {
+          case "TEXT":
+            contextData.content = context.content;
+            break;
+        
+          case "LINK":
+            contextData.url = context.url;
+            break;
+        
+          default:
+            if (contextTypeArray.includes(context.type)) {
+              const file = formData.get(`file_${i}`) as File;
+              if (file) {
+                // Save file
+                const companionsDir = path.join(process.cwd(), "companions");
+                await mkdir(companionsDir, { recursive: true });
+        
+                const fileExtension = context.type.toLowerCase();
+                const fileName = `${companion.id}_${context.title.replace(/[^a-zA-Z0-9]/g, "_")}.${fileExtension}`;
+                const filePath = path.join(companionsDir, fileName);
+        
+                const bytes = await file.arrayBuffer();
+                await writeFile(filePath, new Uint8Array(bytes));
+        
+                contextData.fileName = fileName;
+                contextData.filePath = filePath;
+                contextData.fileType = fileExtension;
+        
+                // Process document with RAG
+                await memoryManager.seedCompanionKnowledgeFromDocument(
+                  companion.id,
+                  filePath,
+                  fileExtension
+                );
+              }
+            }
+            break;
         }
+        
 
         // Save context to database
         await prismadb.companionContext.create({
@@ -87,16 +108,23 @@ export async function POST(req: NextRequest) {
       }
 
       // Process text contexts with RAG
-      const textContexts = contexts.filter((ctx: any) => ctx.type === 'TEXT' && ctx.content);
+      const textContexts = contexts.filter(
+        (ctx: any) => ctx.type === "TEXT" && ctx.content
+      );
       if (textContexts.length > 0) {
         await memoryManager.seedCompanionKnowledgeFromText(
           companion.id,
-          textContexts.map((ctx: any) => ({ title: ctx.title, content: ctx.content }))
+          textContexts.map((ctx: any) => ({
+            title: ctx.title,
+            content: ctx.content,
+          }))
         );
       }
 
       // Process link contexts with RAG
-      const linkContexts = contexts.filter((ctx: any) => ctx.type === 'LINK' && ctx.url);
+      const linkContexts = contexts.filter(
+        (ctx: any) => ctx.type === "LINK" && ctx.url
+      );
       if (linkContexts.length > 0) {
         await memoryManager.seedCompanionKnowledgeFromLinks(
           companion.id,
@@ -125,15 +153,22 @@ export async function PATCH(
     const { companionId } = await params;
     const formData = await req.formData();
 
-    const name = formData.get('name') as string;
-    const description = formData.get('description') as string;
-    const instructions = formData.get('instructions') as string;
-    const seed = formData.get('seed') as string;
-    const img = formData.get('img') as string;
-    const categoryId = formData.get('categoryId') as string;
-    const contextsJson = formData.get('contexts') as string;
+    const name = formData.get("name") as string;
+    const description = formData.get("description") as string;
+    const instructions = formData.get("instructions") as string;
+    const seed = formData.get("seed") as string;
+    const img = formData.get("img") as string;
+    const categoryId = formData.get("categoryId") as string;
+    const contextsJson = formData.get("contexts") as string;
 
-    if (!name || !description || !instructions || !seed || !img || !categoryId) {
+    if (
+      !name ||
+      !description ||
+      !instructions ||
+      !seed ||
+      !img ||
+      !categoryId
+    ) {
       return new NextResponse("Missing required fields", { status: 400 });
     }
 
@@ -179,32 +214,46 @@ export async function PATCH(
           type: context.type,
           title: context.title,
         };
+        switch (context.type) {
+          case "TEXT":
+            contextData.content = context.content;
+            break;
 
-        if (context.type === 'TEXT') {
-          contextData.content = context.content;
-        } else if (context.type === 'LINK') {
-          contextData.url = context.url;
-        } else if (['PDF', 'DOC', 'DOCX', 'TXT', 'EXCEL', 'CSV'].includes(context.type)) {
-          const file = formData.get(`file_${i}`) as File;
-          if (file) {
-            // Save file
-            const companionsDir = path.join(process.cwd(), 'companions');
-            await mkdir(companionsDir, { recursive: true });
+          case "LINK":
+            contextData.url = context.url;
+            break;
 
-            const fileExtension = context.type.toLowerCase();
-            const fileName = `${companion.id}_${context.title.replace(/[^a-zA-Z0-9]/g, '_')}.${fileExtension}`;
-            const filePath = path.join(companionsDir, fileName);
+          default:
+            if (contextTypeArray.includes(context.type)) {
+              const file = formData.get(`file_${i}`) as File;
+              if (file) {
+                // Save file
+                const companionsDir = path.join(process.cwd(), "companions");
+                await mkdir(companionsDir, { recursive: true });
 
-            const bytes = await file.arrayBuffer();
-            await writeFile(filePath, new Uint8Array(bytes));
+                const fileExtension = context.type.toLowerCase();
+                const fileName = `${companion.id}_${context.title.replace(
+                  /[^a-zA-Z0-9]/g,
+                  "_"
+                )}.${fileExtension}`;
+                const filePath = path.join(companionsDir, fileName);
 
-            contextData.fileName = fileName;
-            contextData.filePath = filePath;
-            contextData.fileType = fileExtension;
+                const bytes = await file.arrayBuffer();
+                await writeFile(filePath, new Uint8Array(bytes));
 
-            // Process document with RAG
-            await memoryManager.seedCompanionKnowledgeFromDocument(companion.id, filePath, fileExtension);
-          }
+                contextData.fileName = fileName;
+                contextData.filePath = filePath;
+                contextData.fileType = fileExtension;
+
+                // Process document with RAG
+                await memoryManager.seedCompanionKnowledgeFromDocument(
+                  companion.id,
+                  filePath,
+                  fileExtension
+                );
+              }
+            }
+            break;
         }
 
         // Save context to database
@@ -214,16 +263,23 @@ export async function PATCH(
       }
 
       // Process text contexts with RAG
-      const textContexts = contexts.filter((ctx: any) => ctx.type === 'TEXT' && ctx.content);
+      const textContexts = contexts.filter(
+        (ctx: any) => ctx.type === "TEXT" && ctx.content
+      );
       if (textContexts.length > 0) {
         await memoryManager.seedCompanionKnowledgeFromText(
           companion.id,
-          textContexts.map((ctx: any) => ({ title: ctx.title, content: ctx.content }))
+          textContexts.map((ctx: any) => ({
+            title: ctx.title,
+            content: ctx.content,
+          }))
         );
       }
 
       // Process link contexts with RAG
-      const linkContexts = contexts.filter((ctx: any) => ctx.type === 'LINK' && ctx.url);
+      const linkContexts = contexts.filter(
+        (ctx: any) => ctx.type === "LINK" && ctx.url
+      );
       if (linkContexts.length > 0) {
         await memoryManager.seedCompanionKnowledgeFromLinks(
           companion.id,

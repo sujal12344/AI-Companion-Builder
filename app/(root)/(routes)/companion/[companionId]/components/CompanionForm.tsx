@@ -35,6 +35,7 @@ import { useRouter } from "next/navigation";
 import CompanionFormSkeleton from "../../loading";
 import { Suspense, useState } from "react";
 import { ContextUpload, ContextItem } from "@/components/ContextUpload";
+import { contextTypeArray } from "@/app/constants/contextType";
 
 interface CompanionFormProps {
   initialData: (Companion & { contexts?: ContextItem[] }) | null;
@@ -138,43 +139,39 @@ export const CompanionForm = ({
     try {
       const formData = new FormData();
 
+      // Append scalar fields; handle contexts separately
       Object.entries(values).forEach(([key, value]) => {
-        if (key === "contexts") {
-          if (Array.isArray(value)) {
-            formData.append("contexts", JSON.stringify(value));
-          }
-        } else {
-          formData.append(key, value as string)
-        }
+        if (key === "contexts") return;
+        formData.append(key, value as string);
       });
+
+      // Build and append contexts JSON to match server expectations
+      const contextsPayload = contexts.map((context) => {
+        const base = { type: context.type, title: context.title };
+        if (context.type === "TEXT") return { ...base, content: context.content || "" };
+        if (context.type === "LINK") return { ...base, url: context.url || "" };
+        return base; // file types
+      });
+      formData.append("contexts", JSON.stringify(contextsPayload));
 
       // Add files for document contexts
       contexts.forEach((context, index) => {
-        if (['PDF', 'DOCX', 'TXT', 'CSV', 'JSON'].includes(context.type) && context.file) {
+        if (contextTypeArray.includes(context.type) && context.file) {
           formData.append(`file_${index}`, context.file);
-          // Also add file metadata
-          formData.append(`file_metadata_${index}`, JSON.stringify({
-            type: context.type,
-            title: context.title,
-            fileName: context.file.name
-          }));
         }
       });
 
       if (initialData) {
         await axios.patch(`/api/companion/${initialData.id}`, formData, {
-          headers: { 'Content-Type': 'multipart/form-data' }
+          headers: { "Content-Type": "multipart/form-data" },
         });
       } else {
         await axios.post("/api/companion", formData, {
-          headers: { 'Content-Type': 'multipart/form-data' }
+          headers: { "Content-Type": "multipart/form-data" },
         });
       }
 
-      toast({
-        description: "Success",
-      });
-
+      toast({ description: "Success" });
       router.refresh();
       router.push("/");
     } catch (error: any) {
@@ -182,7 +179,7 @@ export const CompanionForm = ({
         variant: "destructive",
         description:
           process.env.NODE_ENV !== "production"
-            ? error.response?.data.message || "Error from CompanionForm"
+            ? error.response?.data?.message || "Error from CompanionForm"
             : "Something went wrong",
       });
     }
