@@ -148,7 +148,8 @@ export const CompanionForm = ({
       // Build and append contexts JSON to match server expectations
       const contextsPayload = contexts.map((context) => {
         const base = { type: context.type, title: context.title };
-        if (context.type === "TEXT") return { ...base, content: context.content || "" };
+        if (context.type === "TEXT")
+          return { ...base, content: context.content || "" };
         if (context.type === "LINK") return { ...base, url: context.url || "" };
         return base; // file types
       });
@@ -156,6 +157,7 @@ export const CompanionForm = ({
 
       // Add files for document contexts
       contexts.forEach((context, index) => {
+        if (context.type === "LINK" || context.type === "TEXT") return;
         if (contextTypeArray.includes(context.type) && context.file) {
           formData.append(`file_${index}`, context.file);
         }
