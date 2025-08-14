@@ -6,9 +6,6 @@ import { Suspense } from "react";
 import CompanionSkeleton from "@/components/companionsSkeleton";
 import { currentUser } from "@clerk/nextjs/server";
 
-// Force dynamic rendering for this page
-export const dynamic = "force-dynamic";
-
 interface rootPageProps {
   searchParams: Promise<{
     categoryId: string;

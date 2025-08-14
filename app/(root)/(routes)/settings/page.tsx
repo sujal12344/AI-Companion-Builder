@@ -1,16 +1,13 @@
 import { SubscriptionButton } from "@/components/SubscriptionButton";
 import { checkSubscription } from "@/lib/subscription";
 
-// Force dynamic rendering for this page
-export const dynamic = 'force-dynamic';
-
 const SettingPage = async () => {
   let isPro = false;
-  
+
   try {
     isPro = await checkSubscription();
   } catch (error) {
-    console.error('Settings page error:', error);
+    console.error("Settings page error:", error);
     // Continue with isPro = false as fallback
   }
 
@@ -39,9 +36,25 @@ const SettingPage = async () => {
     <div className="h-full p-4 ">
       <h3 className="text-lg font-medium">Settings</h3>
       <div className="text-muted-foreground text-sm mb-4">
-        {isPro
-          ? <span>You are currently on a <span className="text-[18px] font-semibold text-blue-500 mx-1"> Pro </span> plan</span>
-          : <span>You are currently on a <span className="text-[18px] font-semibold text-blue-500 mx-1"> FREE </span> plan</span>}
+        {isPro ? (
+          <span>
+            You are currently on a{" "}
+            <span className="text-[18px] font-semibold text-blue-500 mx-1">
+              {" "}
+              Pro{" "}
+            </span>{" "}
+            plan
+          </span>
+        ) : (
+          <span>
+            You are currently on a{" "}
+            <span className="text-[18px] font-semibold text-blue-500 mx-1">
+              {" "}
+              FREE{" "}
+            </span>{" "}
+            plan
+          </span>
+        )}
       </div>
       <h4 className="text-md font-semibold mt-4 mb-1">Features:</h4>
       <table className="min-w-full border-collapse border border-gray-800 mb-6">

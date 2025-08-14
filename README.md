@@ -37,7 +37,7 @@ AI-Companion provides an interactive platform for users to engage with pre-exist
 
 ## <a name="about">📜 About Us</a>
 
-**companion.ai** is a groundbreaking SaaS full-stack application that empowers users to create their very own AI companions and engage in meaningful conversations with them. With a user-friendly interface and cutting-edge AI models, the possibilities are endless.
+**Companion.ai** is a groundbreaking SaaS full-stack application that empowers users to create their very own AI companions and engage in meaningful conversations with them. With a user-friendly interface and cutting-edge AI models, the possibilities are endless.
 
 
 ## <a name="tech-stack">⚙️ Tech Stack</a>

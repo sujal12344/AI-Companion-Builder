@@ -7,11 +7,8 @@ import {
   RootErrorBoundary,
   NavbarErrorBoundary,
   SidebarErrorBoundary,
-  ContentErrorBoundary
+  ContentErrorBoundary,
 } from "@/components/ErrorBoundaryWrapper";
-
-// Force dynamic rendering for this layout
-export const dynamic = 'force-dynamic';
 
 // Loading components
 const NavbarSkeleton = () => (
@@ -63,11 +60,13 @@ const ContentSkeleton = () => {
       </div>
       <div className="text-center">
         <p className="text-primary font-medium">Loading AI Companion</p>
-        <p className="text-muted-foreground text-sm">Preparing your experience...</p>
+        <p className="text-muted-foreground text-sm">
+          Preparing your experience...
+        </p>
       </div>
     </div>
-  )
-}
+  );
+};
 
 const RootLayout = async ({ children }: { children: React.ReactNode }) => {
   let isPro = false;
@@ -75,7 +74,7 @@ const RootLayout = async ({ children }: { children: React.ReactNode }) => {
   try {
     isPro = await checkSubscription();
   } catch (error) {
-    console.error('Error checking subscription:', error);
+    console.error("Error checking subscription:", error);
     // Continue with isPro = false as fallback
   }
 
@@ -101,9 +100,7 @@ const RootLayout = async ({ children }: { children: React.ReactNode }) => {
         {/* Main content with error boundary */}
         <main className="md:pl-20 pt-16 dark:bg-black bg-white">
           <ContentErrorBoundary>
-            <Suspense fallback={<ContentSkeleton />}>
-              {children}
-            </Suspense>
+            <Suspense fallback={<ContentSkeleton />}>{children}</Suspense>
           </ContentErrorBoundary>
         </main>
       </div>

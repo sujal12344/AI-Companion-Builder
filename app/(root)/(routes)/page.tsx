@@ -8,9 +8,6 @@ import CompanionSkeleton from "@/components/companionsSkeleton";
 import { CompanionErrorBoundary } from "@/components/ErrorBoundaryWrapper";
 import ServerErrorFallback from "@/components/ServerErrorFallback";
 
-// Force dynamic rendering for this page
-export const dynamic = 'force-dynamic';
-
 interface rootPageProps {
   searchParams: Promise<{
     categoryId: string;
@@ -22,23 +19,12 @@ const RootPage = async ({ searchParams }: rootPageProps) => {
   try {
     const { categoryId, name } = await searchParams;
 
-    // Build the where clause more efficiently
-    const whereClause: any = {};
-
-    if (categoryId) {
-      whereClause.categoryId = categoryId;
-    }
-
-    if (name) {
-      whereClause.name = {
-        search: name,
-      };
-    }
-
-    // Run both queries in parallel for better performance
     const [data, categories] = await Promise.all([
       prismadb.companion.findMany({
-        where: whereClause,
+        where: {
+          categoryId,
+          name
+        },
         orderBy: {
           createdAt: "desc", // Changed to desc for newest first
         },

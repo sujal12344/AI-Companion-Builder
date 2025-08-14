@@ -1,8 +1,5 @@
 import Link from "next/link";
 
-// Force dynamic rendering for this page
-export const dynamic = 'force-dynamic';
-
 export default function NotFound() {
   return (
     <div className="flex flex-col justify-center items-center h-full gap-2 sm:gap-4 lg:gap-6">

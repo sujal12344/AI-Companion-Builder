@@ -75,7 +75,7 @@ const formSchema = z.object({
     message: "Image is required",
   }),
   categoryId: z.string().min(1, {
-    message: "Category  is required",
+    message: "Category is required",
   }),
   contexts: z
     .array(
