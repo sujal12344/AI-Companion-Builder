@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { CldUploadButton } from "next-cloudinary";
 import Image from "next/image";
+import errorResponse from "@/lib/errorResponse";
 
 interface ImageUploadProps {
   value: string;
@@ -25,6 +26,10 @@ const ImageUpload = ({ value, onChange, disabled }: ImageUploadProps) => {
         onUpload={(result: any) => onChange(result.info.secure_url)}
         options={{ maxFiles: 1 }}
         uploadPreset={process.env.NEXT_PUBLIC_CLOUDINARY_UPLOADPRESET}
+        onError={(error) => {
+          console.log(error)
+          errorResponse(error)
+        }}
       >
         <div className="p-4 border-4 border-dashed border-primary/10 rounded-lg hover:opacity-75 transition flex flex-col space-y-2 items-center justify-center">
           <div className="relative h-40 w-40">
@@ -33,7 +38,7 @@ const ImageUpload = ({ value, onChange, disabled }: ImageUploadProps) => {
               alt="upload"
               src={value || "/placeholder.svg"}
               className="rounded-lg object-cover"
-              // height={160} // Removed height property
+            // height={160} // Removed height property
             />
           </div>
         </div>
