@@ -1,0 +1,9 @@
+
+name: Hello
+"on": push
+jobs:
+  job_ka_naam:
+    runs-on: ubuntu-latest
+    steps:
+      - name: "namste-karo-beta"
+        run: echo "namste pappaji"
