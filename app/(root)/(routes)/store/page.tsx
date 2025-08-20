@@ -5,7 +5,6 @@ import Companions from "@/components/Companions";
 import { Suspense } from "react";
 import CompanionSkeleton from "@/components/companionsSkeleton";
 import { currentUser } from "@clerk/nextjs/server";
-import errorResponse from "@/lib/errorResponse";
 
 interface rootPageProps {
   searchParams: Promise<{
@@ -52,7 +51,7 @@ const StorePage = async ({ searchParams }: rootPageProps) => {
       </div>
     );
   } catch (error) {
-    errorResponse(error);
+    console.error("Store page error:", error);
     return (
       <div className="h-full p-4 space-y-2">
         <div className="text-2xl font-semibold mb-4">
