@@ -6,7 +6,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Get code
-        run: |
-          echo "Getting code"
-          git clone "${{toJson(github)}}"
-          git clone https://github.com/sujal12344/AI-Companion-Builder.git
+        uses: actions/checkout@v5
+        # run: |
+        #   echo "Getting code"
+        #   git clone "${{toJson(github)}}"
+        #   git clone https://github.com/sujal12344/AI-Companion-Builder.git
