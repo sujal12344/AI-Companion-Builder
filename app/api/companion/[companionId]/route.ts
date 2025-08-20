@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
       !img ||
       !categoryId
     ) {
-      return NextResponse.json({error: "Missing required fields"}, { status: 400 });
+      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
     // Create companion
@@ -312,12 +312,12 @@ export async function DELETE(
       where: { id: companionId },
     });
 
-    if (!existingCompanion){
-      return NextResponse.json({error: "Companion not found"}, { status: 404 });
+    if (!existingCompanion) {
+      return NextResponse.json({ error: "Companion not found" }, { status: 404 });
     }
 
     if (existingCompanion.userId !== user.id) {
-      return NextResponse.json({error: "You haven't owned this companion"}, { status: 401 });
+      return NextResponse.json({ error: "You haven't owned this companion" }, { status: 401 });
     }
 
     // Delete companion

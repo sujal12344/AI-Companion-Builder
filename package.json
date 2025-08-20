@@ -18,7 +18,7 @@
     "@langchain/google-genai": "^0.2.16",
     "@langchain/pinecone": "^0.2.0",
     "@langchain/textsplitters": "^0.1.0",
-    "@pinecone-database/pinecone": "^6.1.2",
+    "@pinecone-database/pinecone": "^5.1.2",
     "@prisma/client": "^6.13.0",
     "@radix-ui/react-avatar": "^1.1.0",
     "@radix-ui/react-dialog": "^1.1.1",
