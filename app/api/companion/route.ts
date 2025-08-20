@@ -95,19 +95,20 @@ export async function POST(req: NextRequest) {
             if (contextTypeArray.includes(context.type)) {
               const file = formData.get(`file_${i}`) as File;
               if (file) {
-                const companionsDir = path.join(process.cwd(), "companions");
-                await mkdir(companionsDir, { recursive: true });
+                const contextDir = path.join(process.cwd(), "context", companion.name.replaceAll(" ", "-"));
+                await mkdir(contextDir, { recursive: true });
 
                 const fileExtension = context.type.toLowerCase();
                 const sanitizedTitle = context.title.replace(
                   /[^a-zA-Z0-9]/g,
                   "_"
                 );
-                const fileName = `${companion.id}_${sanitizedTitle}.${fileExtension}`;
-                const filePath = path.join(companionsDir, fileName);
+                const fileName = `${sanitizedTitle}.${fileExtension}`;
+                const filePath = path.join(contextDir, fileName);
 
                 const bytes = await file.arrayBuffer();
                 await writeFile(filePath, new Uint8Array(bytes));
+                console.log(`\n 📁 Saved file: ${filePath}\n`);
 
                 contextData.fileName = fileName;
                 contextData.filePath = filePath;
@@ -115,6 +116,7 @@ export async function POST(req: NextRequest) {
                 // Immediately embed this document
                 await memoryManager.seedCompanionKnowledgeFromDocument(
                   companion.id,
+                  companion.name,
                   filePath,
                   context.type
                 );
@@ -135,7 +137,7 @@ export async function POST(req: NextRequest) {
       );
       if (textContexts.length > 0) {
         await memoryManager.seedCompanionKnowledgeFromText(
-          companion.id,
+          companion.id, companion.name,
           textContexts.map((ctx) => ({
             title: ctx.title,
             content: ctx.content!,
@@ -149,7 +151,7 @@ export async function POST(req: NextRequest) {
       );
       if (linkContexts.length > 0) {
         await memoryManager.seedCompanionKnowledgeFromLinks(
-          companion.id,
+          companion.id, companion.name,
           linkContexts.map((ctx) => ({ title: ctx.title, url: ctx.url! }))
         );
       }

@@ -75,15 +75,16 @@ export async function POST(req: NextRequest) {
               const file = formData.get(`file_${i}`) as File;
               if (file) {
                 // Save file
-                const companionsDir = path.join(process.cwd(), "context", companion.name);
-                await mkdir(companionsDir, { recursive: true });
+                const contextDir = path.join(process.cwd(), "context", companion.name.replaceAll(" ", "-"));
+                await mkdir(contextDir, { recursive: true });
 
                 const fileExtension = context.type.toLowerCase();
                 const fileName = `${context.title.replace(/[^a-zA-Z0-9]/g, "_")}.${fileExtension}`;
-                const filePath = path.join(companionsDir, fileName);
+                const filePath = path.join(contextDir, fileName);
 
                 const bytes = await file.arrayBuffer();
                 await writeFile(filePath, new Uint8Array(bytes));
+                console.log(`\n 📁 Saved file: ${filePath}\n`);
 
                 contextData.fileName = fileName;
                 contextData.filePath = filePath;
@@ -92,6 +93,7 @@ export async function POST(req: NextRequest) {
                 // Process document with RAG
                 await memoryManager.seedCompanionKnowledgeFromDocument(
                   companion.id,
+                  companion.name,
                   filePath,
                   fileExtension
                 );
@@ -113,7 +115,7 @@ export async function POST(req: NextRequest) {
       );
       if (textContexts.length > 0) {
         await memoryManager.seedCompanionKnowledgeFromText(
-          companion.id,
+          companion.id, companion.name,
           textContexts.map((ctx: any) => ({
             title: ctx.title,
             content: ctx.content,
@@ -127,7 +129,7 @@ export async function POST(req: NextRequest) {
       );
       if (linkContexts.length > 0) {
         await memoryManager.seedCompanionKnowledgeFromLinks(
-          companion.id,
+          companion.id, companion.name,
           linkContexts.map((ctx: any) => ({ title: ctx.title, url: ctx.url }))
         );
       }
@@ -228,18 +230,19 @@ export async function PATCH(
               const file = formData.get(`file_${i}`) as File;
               if (file) {
                 // Save file
-                const companionsDir = path.join(process.cwd(), "companions");
-                await mkdir(companionsDir, { recursive: true });
+                const contextDir = path.join(process.cwd(), "context", companion.name.replaceAll(" ", "-"));
+                await mkdir(contextDir, { recursive: true });
 
                 const fileExtension = context.type.toLowerCase();
-                const fileName = `${companion.id}_${context.title.replace(
+                const fileName = `${context.title.replace(
                   /[^a-zA-Z0-9]/g,
                   "_"
                 )}.${fileExtension}`;
-                const filePath = path.join(companionsDir, fileName);
+                const filePath = path.join(contextDir, fileName);
 
                 const bytes = await file.arrayBuffer();
                 await writeFile(filePath, new Uint8Array(bytes));
+                console.log(`📁 Updated file: ${filePath}`);
 
                 contextData.fileName = fileName;
                 contextData.filePath = filePath;
@@ -248,6 +251,7 @@ export async function PATCH(
                 // Process document with RAG
                 await memoryManager.seedCompanionKnowledgeFromDocument(
                   companion.id,
+                  companion.name,
                   filePath,
                   fileExtension
                 );
@@ -268,7 +272,7 @@ export async function PATCH(
       );
       if (textContexts.length > 0) {
         await memoryManager.seedCompanionKnowledgeFromText(
-          companion.id,
+          companion.id, companion.name,
           textContexts.map((ctx: any) => ({
             title: ctx.title,
             content: ctx.content,
@@ -282,7 +286,7 @@ export async function PATCH(
       );
       if (linkContexts.length > 0) {
         await memoryManager.seedCompanionKnowledgeFromLinks(
-          companion.id,
+          companion.id, companion.name,
           linkContexts.map((ctx: any) => ({ title: ctx.title, url: ctx.url }))
         );
       }

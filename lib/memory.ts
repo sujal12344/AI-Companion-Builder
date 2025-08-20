@@ -2,9 +2,9 @@ import { Redis } from "@upstash/redis";
 import { Pinecone } from "@pinecone-database/pinecone";
 import { PineconeStore } from "@langchain/pinecone";
 import { GoogleGenerativeAIEmbeddings } from '@langchain/google-genai';
-import { PDFLoader } from 'langchain/document_loaders/fs/pdf';
-import { DocxLoader } from 'langchain/document_loaders/fs/docx';
-import { CSVLoader } from 'langchain/document_loaders/fs/csv';
+import { PDFLoader } from '@langchain/community/document_loaders/fs/pdf';
+import { DocxLoader } from '@langchain/community/document_loaders/fs/docx';
+import { CSVLoader } from '@langchain/community/document_loaders/fs/csv';
 import { JSONLoader } from 'langchain/document_loaders/fs/json';
 import { TextLoader } from 'langchain/document_loaders/fs/text';
 import { RecursiveCharacterTextSplitter } from '@langchain/textsplitters';
@@ -54,7 +54,7 @@ export class MemoryManager {
   }
 
   // Load and embed document content for a companion
-  public async seedCompanionKnowledgeFromDocument(companionId: string, filePath: string, fileType: ContextType) {
+  public async seedCompanionKnowledgeFromDocument(companionId: string, companionName: string, filePath: string, fileType: ContextType) {
     try {
       const pineconeIndex = this.pinecone.index(process.env.PINECONE_INDEX!);
 
@@ -67,7 +67,7 @@ export class MemoryManager {
       });
 
       if (existingDocs.matches?.length > 0) {
-        console.log(`Document ${filePath} already embedded for companion ${companionId}`);
+        console.log(`\n Document ${filePath} already embedded for companion ${companionName}\n`);
         return;
       }
 
@@ -76,37 +76,49 @@ export class MemoryManager {
       // Load document based on file type
       switch (fileType) {
         case 'PDF':
-          console.log(`Loading PDF: ${filePath}`);
+          console.log(`\n Loading PDF: ${filePath} \n`);
           const pdfLoader = new PDFLoader(filePath);
           docs = await pdfLoader.load();
           console.log(`PDF loaded successfully: ${docs.length} pages`);
           break;
         case 'DOCX':
-          console.log(`Loading DOCX: ${filePath}`);
+          console.log(`\n Loading DOCX: ${filePath} \n`);
           const docxLoader = new DocxLoader(filePath);
           docs = await docxLoader.load();
           console.log(`DOCX loaded successfully: ${docs.length} documents`);
           break;
         case 'TXT':
-          console.log(`Loading TXT: ${filePath}`);
+          console.log(`\n Loading TXT: ${filePath} \n`);
           const textLoader = new TextLoader(filePath);
           docs = await textLoader.load();
           console.log(`TXT loaded successfully: ${docs.length} documents`);
           break;
         case 'CSV':
-          console.log(`Loading CSV: ${filePath}`);
-          const csvLoader = new CSVLoader(filePath);
-          docs = await csvLoader.load();
-          console.log(`CSV loaded successfully: ${docs.length} rows`);
+          console.log(`\n Loading CSV: ${filePath} \n`);
+          try {
+            const csvLoader = new CSVLoader(filePath);
+            docs = await csvLoader.load();
+            console.log(`CSV loaded successfully: ${docs.length} rows`);
+          } catch (csvError) {
+            console.error(`CSV loading failed, trying alternative method:`, csvError);
+            // Fallback: read as text and create document
+            const fs = await import('fs/promises');
+            const csvContent = await fs.readFile(filePath, 'utf-8');
+            docs = [{
+              pageContent: csvContent,
+              metadata: { source: filePath, type: 'CSV' }
+            }];
+            console.log(`CSV loaded as text fallback`);
+          }
           break;
         case 'JSON':
-          console.log(`Loading JSON: ${filePath}`);
+          console.log(`\n Loading JSON: ${filePath} \n`);
           const jsonLoader = new JSONLoader(filePath);
           docs = await jsonLoader.load();
           console.log(`JSON loaded successfully: ${docs.length} documents`);
           break;
         default:
-          throw new Error(`Unsupported file type: ${fileType}`);
+          throw new Error(`\n Unsupported file type: ${fileType}\n`);
       }
 
       const textSplitter = new RecursiveCharacterTextSplitter({
@@ -132,15 +144,26 @@ export class MemoryManager {
         maxConcurrency: 5,
       });
 
-      console.log(`Embedded ${chunks.length} chunks for companion ${companionId} from ${fileType} document`);
+      console.log(`\n✅ Embedded ${chunks.length} chunks for companion ${companionName} from ${fileType} document\n`);
+
+      // TODO: Uncomment this when ready to delete files after embedding
+      // import { unlink } from 'fs/promises';
+      // try {
+      //   await unlink(filePath);
+      //   console.log(`🗑️ Deleted file: ${filePath}`);
+      // } catch (deleteError) {
+      //   console.error(`Failed to delete file ${filePath}:`, deleteError);
+      // }
+
     } catch (error) {
-      console.error(`Failed to embed ${fileType} document:`, error);
+      console.error(`❌ Failed to embed ${fileType} document:`, error);
     }
   }
 
   // Load and embed text content for a companion
   public async seedCompanionKnowledgeFromText(
     companionId: string,
+    companionName: string,
     textContexts: { title: string; content: string }[]
   ) {
     try {
@@ -186,7 +209,7 @@ export class MemoryManager {
           maxConcurrency: 5,
         });
 
-        console.log(`Embedded ${allChunks.length} text chunks for companion ${companionId}`);
+        console.log(`\n Embedded ${allChunks.length} text chunks for companion ${companionName}\n`);
       }
     } catch (error) {
       console.error("Failed to embed text contexts:", error);
@@ -196,6 +219,7 @@ export class MemoryManager {
   // Load and embed web content for a companion
   public async seedCompanionKnowledgeFromLinks(
     companionId: string,
+    companionName: string,
     linkContexts: { title: string; url: string }[]
   ) {
     try {
@@ -228,7 +252,7 @@ export class MemoryManager {
           maxConcurrency: 5,
         });
 
-        console.log(`Embedded ${allChunks.length} link chunks for companion ${companionId}`);
+        console.log(`\nEmbedded ${allChunks.length} link chunks for companion ${companionName}\n`);
       }
     } catch (error) {
       console.error("Failed to embed link contexts:", error);

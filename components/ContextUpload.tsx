@@ -64,7 +64,7 @@ export const ContextUpload = ({
 }: ContextUploadProps) => {
   const [newContext, setNewContext] = useState<ContextItem>({
     id: Date.now().toString(),
-    type: "TEXT",
+    type: "PDF",
     title: "",
     content: "",
   });
@@ -139,7 +139,7 @@ export const ContextUpload = ({
 
     setNewContext({
       id: Date.now().toString(),
-      type: "TEXT",
+      type: "PDF",
       title: "",
       content: "",
     });
@@ -223,6 +223,7 @@ export const ContextUpload = ({
                     setNewContext({ ...newContext, type: value as ContextType })
                   }
                   disabled={disabled}
+                  defaultValue="PDF"
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -286,56 +287,55 @@ export const ContextUpload = ({
               newContext.type === "TXT" ||
               newContext.type === "CSV" ||
               newContext.type === "JSON") && (
-              <div>
-                <Label>Document File</Label>
-                <div
-                  className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
-                    isDragOver
+                <div>
+                  <Label>Document File</Label>
+                  <div
+                    className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${isDragOver
                       ? "border-primary bg-primary/5"
                       : "border-muted-foreground/25"
-                  }`}
-                  onDrop={handleFileDrop}
-                  onDragOver={handleDragOver}
-                  onDragLeave={handleDragLeave}
-                >
-                  <Upload className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
-                  <p className="text-sm text-muted-foreground mb-2">
-                    Drag and drop your {newContext.type} file here, or click to
-                    browse
-                  </p>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() =>
-                      document.getElementById("file-upload")?.click()
-                    }
-                    disabled={disabled}
+                      }`}
+                    onDrop={handleFileDrop}
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
                   >
-                    Choose File
-                  </Button>
-                  <input
-                    id="file-upload"
-                    type="file"
-                    className="hidden"
-                    onChange={handleFileChange}
-                    accept={getAcceptAttribute(newContext.type)}
-                    aria-label="Upload context file"
-                    title="Upload context file"
-                  />
-                </div>
-                {newContext.file && (
-                  <div className="mt-2 p-2 bg-muted rounded-md">
-                    <p className="text-sm font-medium">
-                      {newContext.file.name}
+                    <Upload className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
+                    <p className="text-sm text-muted-foreground mb-2">
+                      Drag and drop your {newContext.type} file here, or click to
+                      browse
                     </p>
-                    <p className="text-xs text-muted-foreground">
-                      {(newContext.file.size / 1024 / 1024).toFixed(2)} MB
-                    </p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        document.getElementById("file-upload")?.click()
+                      }
+                      disabled={disabled}
+                    >
+                      Choose File
+                    </Button>
+                    <input
+                      id="file-upload"
+                      type="file"
+                      className="hidden"
+                      onChange={handleFileChange}
+                      accept={getAcceptAttribute(newContext.type)}
+                      aria-label="Upload context file"
+                      title="Upload context file"
+                    />
                   </div>
-                )}
-              </div>
-            )}
+                  {newContext.file && (
+                    <div className="mt-2 p-2 bg-muted rounded-md">
+                      <p className="text-sm font-medium">
+                        {newContext.file.name}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {(newContext.file.size / 1024 / 1024).toFixed(2)} MB
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
 
             <Button
               type="button"
@@ -371,10 +371,9 @@ export const ContextUpload = ({
                         context.type === "JSON") &&
                         context.file?.name}
                       {context.type === "TEXT" &&
-                        `${context.content?.slice(0, 50)}${
-                          context.content && context.content.length > 50
-                            ? "..."
-                            : ""
+                        `${context.content?.slice(0, 50)}${context.content && context.content.length > 50
+                          ? "..."
+                          : ""
                         }`}
                     </p>
                   </div>

@@ -1,15 +1,12 @@
 import { StreamingTextResponse } from "ai";
 import { currentUser } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
-import fs from "fs";
-import path from "path";
 
 import prismadb from "@/lib/prismadb";
 import { MemoryManager } from "@/lib/memory";
 import { rateLimit } from "@/lib/rateLimit";
 import Groq from "groq-sdk";
 import { Companion } from "@prisma/client";
-import { contextTypeArray } from "@/app/constants/contextType";
 
 export async function POST(
   request: Request,
@@ -67,9 +64,6 @@ export async function POST(
         companionKey
       );
     }
-
-    // Load companion's knowledge from contexts
-    await loadCompanionContexts(memoryManager, companion);
 
     // Save user query to chat history
     await memoryManager.writeToHistory(`User: ${userQuery}\n`, companionKey);
@@ -130,57 +124,6 @@ export async function POST(
     return NextResponse.json(`Internal Server Error: ${error}`, {
       status: 500,
     });
-  }
-}
-
-// Helper function to load companion contexts
-async function loadCompanionContexts(
-  memoryManager: MemoryManager,
-  companion: Companion
-) {
-  try {
-    // Get all contexts for this companion
-    const contexts = await prismadb.companionContext.findMany({
-      where: { companionId: companion.id },
-    });
-
-    for (const context of contexts) {
-      switch (context.type) {
-        case "TEXT":
-          if (context.content) {
-            await memoryManager.seedCompanionKnowledgeFromText(companion.id, [
-              { title: context.title, content: context.content },
-            ]);
-          }
-          break;
-
-        case "LINK":
-          if (context.url) {
-            await memoryManager.seedCompanionKnowledgeFromLinks(companion.id, [
-              { title: context.title, url: context.url },
-            ]);
-          }
-          break;
-
-        default:
-          if (contextTypeArray.includes(context.type) && context.filePath) {
-            try {
-              await fs.promises.access(context.filePath);
-              await memoryManager.seedCompanionKnowledgeFromDocument(
-                companion.id,
-                context.filePath,
-                context.type
-              );
-            } catch (err) {
-              // File doesn't exist or is not accessible
-              console.warn(`Context file not accessible: ${context.filePath}`);
-            }
-          }
-          break;
-      }
-    }
-  } catch (error) {
-    console.error("Error loading companion contexts:", error);
   }
 }
 
