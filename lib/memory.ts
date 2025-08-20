@@ -2,11 +2,11 @@ import { Redis } from "@upstash/redis";
 import { Pinecone } from "@pinecone-database/pinecone";
 import { PineconeStore } from "@langchain/pinecone";
 import { GoogleGenerativeAIEmbeddings } from '@langchain/google-genai';
-import { PDFLoader } from '@langchain/community/document_loaders/fs/pdf';
-import { DocxLoader } from '@langchain/community/document_loaders/fs/docx';
-import { CSVLoader } from '@langchain/community/document_loaders/fs/csv';
-import { JSONLoader } from "langchain/document_loaders/fs/json";
-import { TextLoader } from "langchain/document_loaders/fs/text";
+import { PDFLoader } from 'langchain/document_loaders/fs/pdf';
+import { DocxLoader } from 'langchain/document_loaders/fs/docx';
+import { CSVLoader } from 'langchain/document_loaders/fs/csv';
+import { JSONLoader } from 'langchain/document_loaders/fs/json';
+import { TextLoader } from 'langchain/document_loaders/fs/text';
 import { RecursiveCharacterTextSplitter } from '@langchain/textsplitters';
 import { scrapeWebContent } from './webScraper';
 import { ContextType } from "@prisma/client";
@@ -76,24 +76,34 @@ export class MemoryManager {
       // Load document based on file type
       switch (fileType) {
         case 'PDF':
+          console.log(`Loading PDF: ${filePath}`);
           const pdfLoader = new PDFLoader(filePath);
           docs = await pdfLoader.load();
+          console.log(`PDF loaded successfully: ${docs.length} pages`);
           break;
         case 'DOCX':
+          console.log(`Loading DOCX: ${filePath}`);
           const docxLoader = new DocxLoader(filePath);
           docs = await docxLoader.load();
+          console.log(`DOCX loaded successfully: ${docs.length} documents`);
           break;
         case 'TXT':
+          console.log(`Loading TXT: ${filePath}`);
           const textLoader = new TextLoader(filePath);
           docs = await textLoader.load();
+          console.log(`TXT loaded successfully: ${docs.length} documents`);
           break;
         case 'CSV':
+          console.log(`Loading CSV: ${filePath}`);
           const csvLoader = new CSVLoader(filePath);
           docs = await csvLoader.load();
+          console.log(`CSV loaded successfully: ${docs.length} rows`);
           break;
         case 'JSON':
+          console.log(`Loading JSON: ${filePath}`);
           const jsonLoader = new JSONLoader(filePath);
           docs = await jsonLoader.load();
+          console.log(`JSON loaded successfully: ${docs.length} documents`);
           break;
         default:
           throw new Error(`Unsupported file type: ${fileType}`);
