@@ -70,5 +70,5 @@ export async function POST(req: Request) {
     });
   }
 
-  return NextResponse.json(null, { status: 200 });
+  return NextResponse.json(null);
 }

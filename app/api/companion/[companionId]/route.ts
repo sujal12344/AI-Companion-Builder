@@ -75,11 +75,11 @@ export async function POST(req: NextRequest) {
               const file = formData.get(`file_${i}`) as File;
               if (file) {
                 // Save file
-                const companionsDir = path.join(process.cwd(), "companions");
+                const companionsDir = path.join(process.cwd(), "context", companion.name);
                 await mkdir(companionsDir, { recursive: true });
 
                 const fileExtension = context.type.toLowerCase();
-                const fileName = `${companion.id}_${context.title.replace(/[^a-zA-Z0-9]/g, "_")}.${fileExtension}`;
+                const fileName = `${context.title.replace(/[^a-zA-Z0-9]/g, "_")}.${fileExtension}`;
                 const filePath = path.join(companionsDir, fileName);
 
                 const bytes = await file.arrayBuffer();
@@ -133,7 +133,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    return NextResponse.json(companion, {status: 200});
+    return NextResponse.json(companion);
   } catch (error) {
     console.error("[COMPANION_POST]", error);
     return NextResponse.json("Internal Error", { status: 500 });
@@ -291,6 +291,43 @@ export async function PATCH(
     return NextResponse.json(companion);
   } catch (error) {
     console.error("[COMPANION_PATCH]", error);
+    return NextResponse.json("Internal Error", { status: 500 });
+  }
+}
+
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ companionId: string }> }
+) {
+  try {
+    const user = await currentUser();
+    if (!user || !user.id || !user.firstName) {
+      return NextResponse.json("Please login", { status: 401 });
+    }
+
+    const { companionId } = await params;
+
+    // Check if user owns this companion
+    const existingCompanion = await prismadb.companion.findUnique({
+      where: { id: companionId },
+    });
+
+    if (!existingCompanion){
+      return NextResponse.json({error: "Companion not found"}, { status: 404 });
+    }
+
+    if (existingCompanion.userId !== user.id) {
+      return NextResponse.json({error: "You haven't owned this companion"}, { status: 401 });
+    }
+
+    // Delete companion
+    await prismadb.companion.delete({
+      where: { id: companionId },
+    });
+
+    return NextResponse.json("Success");
+  } catch (error) {
+    console.error("[COMPANION_DELETE]", error);
     return NextResponse.json("Internal Error", { status: 500 });
   }
 }
