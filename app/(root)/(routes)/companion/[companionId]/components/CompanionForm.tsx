@@ -36,6 +36,7 @@ import CompanionFormSkeleton from "../../loading";
 import { Suspense, useState } from "react";
 import { ContextUpload, ContextItem } from "@/components/ContextUpload";
 import { contextTypeArray } from "@/app/constants/contextType";
+import errorResponse from "@/lib/errorResponse";
 
 interface CompanionFormProps {
   initialData: (Companion & { contexts?: ContextItem[] }) | null;
@@ -61,29 +62,29 @@ Elon: Always! But right now, I'm particularly excited about Neuralink. It has th
 const formSchema = z.object({
   name: z.string().min(1, {
     message: "Name is required.",
-  }),
+  }).trim(),
   description: z.string().min(1, {
     message: "Description is required.",
-  }),
+  }).trim(),
   instructions: z.string().min(20, {
     message: "Instructions required at least 20 characters.",
-  }),
+  }).trim(),
   seed: z.string().min(20, {
     message: "Seed required at least 20 characters.",
-  }),
+  }).trim(),
   img: z.string().min(1, {
     message: "Image is required",
-  }),
+  }).trim(),
   categoryId: z.string().min(1, {
     message: "Category is required",
-  }),
+  }).trim(),
   contexts: z
     .array(
       z.object({
         type: z.nativeEnum(ContextType),
-        title: z.string(),
-        content: z.string().optional(),
-        url: z.string().optional(),
+        title: z.string().trim(),
+        content: z.string().trim().optional(),
+        url: z.string().trim().optional(),
       })
     )
     .optional(),
@@ -176,14 +177,8 @@ export const CompanionForm = ({
       toast({ description: "Success" });
       router.refresh();
       router.push("/");
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        description:
-          process.env.NODE_ENV !== "production"
-            ? error.response?.data?.message || "Error from CompanionForm"
-            : "Something went wrong",
-      });
+    } catch (error) {
+      errorResponse(error);
     }
   };
 

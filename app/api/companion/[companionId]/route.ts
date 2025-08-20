@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
   try {
     const user = await currentUser();
     if (!user || !user.id || !user.firstName) {
-      return new NextResponse("Unauthorized", { status: 401 });
+      return NextResponse.json({ error: "Please login or signup before creating context" }, { status: 401 });
     }
 
     const formData = await req.formData();
@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
       !img ||
       !categoryId
     ) {
-      return new NextResponse("Missing required fields", { status: 400 });
+      return NextResponse.json({error: "Missing required fields"}, { status: 400 });
     }
 
     // Create companion
@@ -65,11 +65,11 @@ export async function POST(req: NextRequest) {
           case "TEXT":
             contextData.content = context.content;
             break;
-        
+
           case "LINK":
             contextData.url = context.url;
             break;
-        
+
           default:
             if (contextTypeArray.includes(context.type)) {
               const file = formData.get(`file_${i}`) as File;
@@ -77,18 +77,18 @@ export async function POST(req: NextRequest) {
                 // Save file
                 const companionsDir = path.join(process.cwd(), "companions");
                 await mkdir(companionsDir, { recursive: true });
-        
+
                 const fileExtension = context.type.toLowerCase();
                 const fileName = `${companion.id}_${context.title.replace(/[^a-zA-Z0-9]/g, "_")}.${fileExtension}`;
                 const filePath = path.join(companionsDir, fileName);
-        
+
                 const bytes = await file.arrayBuffer();
                 await writeFile(filePath, new Uint8Array(bytes));
-        
+
                 contextData.fileName = fileName;
                 contextData.filePath = filePath;
                 contextData.fileType = fileExtension;
-        
+
                 // Process document with RAG
                 await memoryManager.seedCompanionKnowledgeFromDocument(
                   companion.id,
@@ -99,7 +99,7 @@ export async function POST(req: NextRequest) {
             }
             break;
         }
-        
+
 
         // Save context to database
         await prismadb.companionContext.create({
@@ -133,10 +133,10 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    return NextResponse.json(companion);
+    return NextResponse.json(companion, {status: 200});
   } catch (error) {
     console.error("[COMPANION_POST]", error);
-    return new NextResponse("Internal Error", { status: 500 });
+    return NextResponse.json("Internal Error", { status: 500 });
   }
 }
 
@@ -147,7 +147,7 @@ export async function PATCH(
   try {
     const user = await currentUser();
     if (!user || !user.id || !user.firstName) {
-      return new NextResponse("Unauthorized", { status: 401 });
+      return NextResponse.json("Please login", { status: 401 });
     }
 
     const { companionId } = await params;
@@ -169,7 +169,7 @@ export async function PATCH(
       !img ||
       !categoryId
     ) {
-      return new NextResponse("Missing required fields", { status: 400 });
+      return NextResponse.json("Missing required fields", { status: 400 });
     }
 
     // Check if user owns this companion
@@ -178,7 +178,7 @@ export async function PATCH(
     });
 
     if (!existingCompanion || existingCompanion.userId !== user.id) {
-      return new NextResponse("Unauthorized", { status: 401 });
+      return NextResponse.json("Companion already exist", { status: 401 });
     }
 
     // Update companion
@@ -291,6 +291,6 @@ export async function PATCH(
     return NextResponse.json(companion);
   } catch (error) {
     console.error("[COMPANION_PATCH]", error);
-    return new NextResponse("Internal Error", { status: 500 });
+    return NextResponse.json("Internal Error", { status: 500 });
   }
 }

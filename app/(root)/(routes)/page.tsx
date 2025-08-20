@@ -7,6 +7,7 @@ import Companions from "@/components/Companions";
 import CompanionSkeleton from "@/components/companionsSkeleton";
 import { CompanionErrorBoundary } from "@/components/ErrorBoundaryWrapper";
 import ServerErrorFallback from "@/components/ServerErrorFallback";
+import errorResponse from "@/lib/errorResponse";
 
 interface rootPageProps {
   searchParams: Promise<{
@@ -56,7 +57,7 @@ const RootPage = async ({ searchParams }: rootPageProps) => {
       </div>
     );
   } catch (error) {
-    console.error('Database error in RootPage:', error);
+    errorResponse(error);
 
     // Return a fallback UI for server-side errors
     return (

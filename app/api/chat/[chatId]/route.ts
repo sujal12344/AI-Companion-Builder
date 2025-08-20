@@ -21,7 +21,7 @@ export async function POST(
 
     // Validate user and query
     if (!user?.firstName || !user?.id || !userQuery?.trim()) {
-      return new NextResponse("Unauthorized or empty query", { status: 401 });
+      return NextResponse.json("Unauthorized or empty query", { status: 401 });
     }
     const { chatId } = await params;
 
@@ -29,7 +29,7 @@ export async function POST(
     const identifier = `chat-${chatId}-${user.id}`;
     const { success } = await rateLimit(identifier);
     if (!success) {
-      return new NextResponse("Rate limit exceeded", { status: 429 });
+      return NextResponse.json("Rate limit exceeded", { status: 429 });
     }
 
     // Get companion and save user message
@@ -47,7 +47,7 @@ export async function POST(
     });
 
     if (!companion) {
-      return new NextResponse("Companion not found", { status: 404 });
+      return NextResponse.json("Companion not found", { status: 404 });
     }
 
     // Initialize memory manager and chat history
@@ -127,7 +127,9 @@ export async function POST(
     return new StreamingTextResponse(stream);
   } catch (error) {
     console.error("[CHAT_POST]", error);
-    return new NextResponse(`Internal Server Error: ${error}`, { status: 500 });
+    return NextResponse.json(`Internal Server Error: ${error}`, {
+      status: 500,
+    });
   }
 }
 
@@ -173,7 +175,8 @@ async function loadCompanionContexts(
               // File doesn't exist or is not accessible
               console.warn(`Context file not accessible: ${context.filePath}`);
             }
-          }          break;
+          }
+          break;
       }
     }
   } catch (error) {
@@ -215,7 +218,8 @@ async function generateAIResponse(
   companion: Companion,
   relevantContext: string,
   recentChatHistory: string
-) {  try {
+) {
+  try {
     const groq = new Groq({
       apiKey: process.env.GROQ_API_KEY,
     });

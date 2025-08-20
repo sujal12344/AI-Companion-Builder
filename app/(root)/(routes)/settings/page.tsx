@@ -1,4 +1,5 @@
 import { SubscriptionButton } from "@/components/SubscriptionButton";
+import errorResponse from "@/lib/errorResponse";
 import { checkSubscription } from "@/lib/subscription";
 
 const SettingPage = async () => {
@@ -7,7 +8,7 @@ const SettingPage = async () => {
   try {
     isPro = await checkSubscription();
   } catch (error) {
-    console.error("Settings page error:", error);
+    errorResponse(error);
     // Continue with isPro = false as fallback
   }
 

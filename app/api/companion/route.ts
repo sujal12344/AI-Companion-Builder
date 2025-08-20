@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
   try {
     const user = await currentUser();
     if (!user || !user.id || !user.firstName) {
-      return new NextResponse("Unauthorized", { status: 401 });
+      return NextResponse.json("Please login or signup before creting companion", { status: 401 });
     }
 
     const formData = await req.formData();
@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
       !img ||
       !categoryId
     ) {
-      return new NextResponse("Missing required fields", { status: 400 });
+      return NextResponse.json("Missing required fields", { status: 400 });
     }
 
     // Parse contexts if provided
@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
         parsedContexts = JSON.parse(contextsJson);
       } catch (error) {
         console.error("Failed to parse contexts:", error);
-        return new NextResponse("Invalid contexts format", { status: 400 });
+        return NextResponse.json("Invalid contexts format", { status: 400 });
       }
     }
 
@@ -158,6 +158,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(companion);
   } catch (error) {
     console.error("[COMPANION_POST]", error);
-    return new NextResponse("Internal Error", { status: 500 });
+    return NextResponse.json("Internal Error", { status: 500 });
   }
 }

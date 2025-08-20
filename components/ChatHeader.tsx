@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useUser } from "@clerk/nextjs";
 import { useToast } from "./ui/use-toast";
+import errorResponse from "@/lib/errorResponse";
 
 interface ChatHeaderProps {
   companion: Companion & {
@@ -44,10 +45,7 @@ const ChatHeader = ({ companion }: ChatHeaderProps) => {
       router.push("/");
       router.refresh();
     } catch (error) {
-      toast({
-        description: "Something went wrong.",
-        variant: "destructive",
-      });
+      errorResponse(error);
     }
   };
 

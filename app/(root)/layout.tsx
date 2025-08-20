@@ -9,6 +9,7 @@ import {
   SidebarErrorBoundary,
   ContentErrorBoundary,
 } from "@/components/ErrorBoundaryWrapper";
+import errorResponse from "@/lib/errorResponse";
 
 // Loading components
 const NavbarSkeleton = () => (
@@ -74,7 +75,7 @@ const RootLayout = async ({ children }: { children: React.ReactNode }) => {
   try {
     isPro = await checkSubscription();
   } catch (error) {
-    console.error("Error checking subscription:", error);
+    errorResponse(error);
     // Continue with isPro = false as fallback
   }
 

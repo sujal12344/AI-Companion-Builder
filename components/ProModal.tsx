@@ -8,17 +8,15 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
-import { useToast } from "./ui/use-toast";
 import { useEffect, useState } from "react";
 import axios from "axios";
+import errorResponse from "@/lib/errorResponse";
 
 export const ProModal = () => {
   const proModal = useProModal();
-  const { toast } = useToast();
 
   const [loading, setLoading] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
@@ -40,10 +38,7 @@ export const ProModal = () => {
 
       window.location.href = response.data.url;
     } catch (error) {
-      toast({
-        variant: "destructive",
-        description: "SOMETHING WENT WRONG",
-      });
+      errorResponse(error);
     } finally {
       setLoading(false);
     }

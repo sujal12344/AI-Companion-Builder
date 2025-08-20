@@ -20,7 +20,7 @@ export async function POST(req: Request) {
     );
 
   } catch (error: any) {
-    return new NextResponse(`Webhook Error: ${error?.message}`, {
+    return NextResponse.json({ error: `Webhook Error: ${error?.message}` }, {
       status: 400,
     });
   }
@@ -35,7 +35,7 @@ export async function POST(req: Request) {
     );
 
     if (!session?.metadata?.userId) {
-      return new NextResponse("User id is required", { status: 400 });
+      return NextResponse.json({error: "User id is required"}, { status: 400 });
     }
 
     await prismadb.userSubscription.create({
@@ -70,5 +70,5 @@ export async function POST(req: Request) {
     });
   }
 
-  return new NextResponse(null, { status: 200 });
+  return NextResponse.json(null, { status: 200 });
 }

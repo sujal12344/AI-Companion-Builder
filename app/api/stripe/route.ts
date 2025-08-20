@@ -12,7 +12,10 @@ export async function GET() {
     const user = await currentUser();
 
     if (!user || !userId) {
-      return new NextResponse("Unauthorized", { status: 401 });
+      return NextResponse.json(
+        { error: "Please login or signup before purchasing" },
+        { status: 401 }
+      );
     }
 
     const userSubscription = await prismadb.userSubscription.findUnique({
@@ -25,7 +28,7 @@ export async function GET() {
         return_url: settingUrl,
       });
 
-      return new NextResponse(JSON.stringify({ url: stripeSession.url }));
+      return NextResponse.json({ url: stripeSession.url });
     }
 
     const stripeSession = await stripe.checkout.sessions.create({
@@ -53,9 +56,12 @@ export async function GET() {
         },
       ],
     });
-    return new NextResponse(JSON.stringify({ url: stripeSession.url }));
+    return NextResponse.json({ url: stripeSession.url });
   } catch (error) {
     console.error("[STRIPE_GET]", error);
-    return new NextResponse("Internal Server Error", { status: 500 });
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 }
+    );
   }
 }

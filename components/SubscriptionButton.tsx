@@ -1,11 +1,11 @@
 "use client";
 
 import axios from "axios";
+import { useState } from "react";
+import { Sparkles } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Sparkles } from "lucide-react";
-import { useState } from "react";
-import { useToast } from "@/components/ui/use-toast";
+import errorResponse from "@/lib/errorResponse";
 
 interface SubscriptionProps {
   isPro: boolean;
@@ -13,7 +13,6 @@ interface SubscriptionProps {
 
 export const SubscriptionButton = ({ isPro }: SubscriptionProps) => {
   const [loading, setLoading] = useState(false);
-  const { toast } = useToast();
 
   const onClick = async () => {
     try {
@@ -21,10 +20,7 @@ export const SubscriptionButton = ({ isPro }: SubscriptionProps) => {
       const response = await axios.get("/api/stripe");
       window.location.href = response.data.url;
     } catch (error) {
-      toast({
-        variant: "destructive",
-        description: "Something went wrong",
-      });
+      errorResponse(error);
     } finally {
       setLoading(false);
     }
