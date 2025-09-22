@@ -1,6 +1,9 @@
 import { SubscriptionButton } from "@/components/SubscriptionButton";
 import { checkSubscription } from "@/lib/subscription";
 
+// Force dynamic rendering
+export const dynamic = 'force-dynamic';
+
 const SettingPage = async () => {
   let isPro = false;
 
