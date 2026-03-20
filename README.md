@@ -87,8 +87,8 @@ Make sure you have the following installed on your machine:
 **Cloning the Repository**
 
 ```bash
-git clone https://github.com/Ponnada96/AI-Companion.git
-cd ai-companion
+git clone https://github.com/sujal12344/ai-companion-builder
+cd ai-companion-builder
 ```
 
 **Installation**
