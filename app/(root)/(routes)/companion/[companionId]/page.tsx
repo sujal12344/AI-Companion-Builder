@@ -17,11 +17,14 @@ const CompanionPage = async ({ params }: companionPageProps) => {
     redirect("/sign-in");
   }
 
-  const isPro = await checkSubscription();
-  if (!isPro) {
-    toast({ description: "Please upgrade to create companion" });
-    redirect("/settings");
-  }
+  // PAYMENT TEMPORARILY DISABLED - Everyone has Pro access
+  const isPro = true; // Set to true to give everyone Pro features
+  
+  // const isPro = await checkSubscription();
+  // if (!isPro) {
+  //   toast({ description: "Please upgrade to create companion" });
+  //   redirect("/settings");
+  // }
 
   const { companionId } = await params;
 

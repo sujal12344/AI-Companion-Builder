@@ -16,6 +16,7 @@ const Sidebar = ({ isPro }: SidebarProps) => {
 
   const proModal = useProModal();
 
+  // PAYMENT TEMPORARILY DISABLED - All features unlocked
   const routes = [
     {
       icon: Home,
@@ -27,7 +28,7 @@ const Sidebar = ({ isPro }: SidebarProps) => {
       icon: Plus,
       href: "/companion/new",
       label: "Create",
-      pro: !isPro,
+      pro: false, // Changed from !isPro to false - everyone can create
     },
     {
       icon: Settings,
@@ -39,7 +40,7 @@ const Sidebar = ({ isPro }: SidebarProps) => {
       icon: Store,
       href: "/store",
       label: "MyStore",
-      pro: !isPro,
+      pro: false, // Changed from !isPro to false - everyone can access store
     }
   ];
 

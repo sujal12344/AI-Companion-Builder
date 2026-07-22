@@ -33,7 +33,8 @@ export const AuthButtons = ({ isPro }: AuthButtonsProps) => {
 
   return (
     <div className="flex gap-x-3 items-center">
-      {isSignedIn && !isPro && (
+      {/* PAYMENT TEMPORARILY DISABLED - Upgrade button hidden */}
+      {/* {isSignedIn && !isPro && (
         <Button
           variant={'premium'}
           size={"sm"}
@@ -42,7 +43,7 @@ export const AuthButtons = ({ isPro }: AuthButtonsProps) => {
           <span>Upgrade</span>
           <Sparkles className="h-4 w-4 fill-white ml-2 text-white" />
         </Button>
-      )}
+      )} */}
       <SignedIn>
         <UserButton afterSignOutUrl="/sign-in" />
       </SignedIn>

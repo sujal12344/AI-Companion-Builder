@@ -5,14 +5,16 @@ import { checkSubscription } from "@/lib/subscription";
 export const dynamic = 'force-dynamic';
 
 const SettingPage = async () => {
-  let isPro = false;
-
-  try {
-    isPro = await checkSubscription();
-  } catch (error) {
-    console.error("Settings subscription check failed:", error);
-    // Continue with isPro = false as fallback
-  }
+  // PAYMENT TEMPORARILY DISABLED - Everyone has Pro access
+  const isPro = true; // Set to true to give everyone Pro features
+  
+  // let isPro = false;
+  // try {
+  //   isPro = await checkSubscription();
+  // } catch (error) {
+  //   console.error("Settings subscription check failed:", error);
+  //   // Continue with isPro = false as fallback
+  // }
 
   // Define features for each plan
   const features = {
@@ -80,7 +82,8 @@ const SettingPage = async () => {
           ))}
         </tbody>
       </table>
-      <SubscriptionButton isPro={isPro} />
+      {/* PAYMENT TEMPORARILY DISABLED - Subscription button hidden */}
+      {/* <SubscriptionButton isPro={isPro} /> */}
     </div>
   );
 };
