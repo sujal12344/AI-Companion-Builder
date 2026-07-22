@@ -205,12 +205,12 @@ export const CompanionForm = ({
               name="img"
               render={({ field }) => (
                 <FormItem className="flex flex-col items-center justify-center space-y-4">
-                  {/* <FormItem className="flex flex-col items-center justify-center space-y-4 col-span-2"> */}
                   <FormControl>
                     <ImageUpload
                       disabled={isLoading}
                       onChange={field.onChange}
                       value={field.value}
+                      key={field.name}
                     />
                   </FormControl>
                   <FormMessage />
