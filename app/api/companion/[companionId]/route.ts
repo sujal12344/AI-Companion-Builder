@@ -5,6 +5,7 @@ import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 import { MemoryManager } from "@/lib/memory";
 import { contextTypeArray } from "@/app/constants/contextType";
+import { getCompanionContextDir, generateSafeFileName } from "@/lib/fileStorage";
 
 export async function POST(req: NextRequest) {
   try {
@@ -74,12 +75,12 @@ export async function POST(req: NextRequest) {
             if (contextTypeArray.includes(context.type)) {
               const file = formData.get(`file_${i}`) as File;
               if (file) {
-                // Save file
-                const contextDir = path.join(process.cwd(), "context", companion.name.replaceAll(" ", "-"));
+                
+                const contextDir = getCompanionContextDir(companion.name);
                 await mkdir(contextDir, { recursive: true });
 
                 const fileExtension = context.type.toLowerCase();
-                const fileName = `${context.title.replace(/[^a-zA-Z0-9]/g, "_")}.${fileExtension}`;
+                const fileName = generateSafeFileName(context.title, fileExtension);
                 const filePath = path.join(contextDir, fileName);
 
                 const bytes = await file.arrayBuffer();
@@ -229,15 +230,12 @@ export async function PATCH(
             if (contextTypeArray.includes(context.type)) {
               const file = formData.get(`file_${i}`) as File;
               if (file) {
-                // Save file
-                const contextDir = path.join(process.cwd(), "context", companion.name.replaceAll(" ", "-"));
+                // Get companion-specific context directory (Vercel-compatible)
+                const contextDir = getCompanionContextDir(companion.name);
                 await mkdir(contextDir, { recursive: true });
 
                 const fileExtension = context.type.toLowerCase();
-                const fileName = `${context.title.replace(
-                  /[^a-zA-Z0-9]/g,
-                  "_"
-                )}.${fileExtension}`;
+                const fileName = generateSafeFileName(context.title, fileExtension);
                 const filePath = path.join(contextDir, fileName);
 
                 const bytes = await file.arrayBuffer();

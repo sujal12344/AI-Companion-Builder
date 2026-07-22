@@ -7,6 +7,7 @@ import { MemoryManager } from "@/lib/memory";
 import { ContextItem } from "@/components/ContextUpload";
 import { ContextType } from "@prisma/client";
 import { contextTypeArray } from "@/app/constants/contextType";
+import { getCompanionContextDir, generateSafeFileName } from "@/lib/fileStorage";
 
 export async function POST(req: NextRequest) {
   try {
@@ -95,15 +96,12 @@ export async function POST(req: NextRequest) {
             if (contextTypeArray.includes(context.type)) {
               const file = formData.get(`file_${i}`) as File;
               if (file) {
-                const contextDir = path.join(process.cwd(), "context", companion.name.replaceAll(" ", "-"));
+                // Get companion-specific context directory (Vercel-compatible)
+                const contextDir = getCompanionContextDir(companion.name);
                 await mkdir(contextDir, { recursive: true });
 
                 const fileExtension = context.type.toLowerCase();
-                const sanitizedTitle = context.title.replace(
-                  /[^a-zA-Z0-9]/g,
-                  "_"
-                );
-                const fileName = `${sanitizedTitle}.${fileExtension}`;
+                const fileName = generateSafeFileName(context.title, fileExtension);
                 const filePath = path.join(contextDir, fileName);
 
                 const bytes = await file.arrayBuffer();
