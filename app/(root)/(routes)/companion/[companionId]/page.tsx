@@ -37,7 +37,11 @@ const CompanionPage = async ({ params }: companionPageProps) => {
 
   const categories = await prismadb.category.findMany();
 
-  return <CompanionForm initialData={companion} categories={categories} />;
+  // Serialize data properly to avoid hydration errors
+  const serializedCompanion = companion ? JSON.parse(JSON.stringify(companion)) : null;
+  const serializedCategories = JSON.parse(JSON.stringify(categories));
+
+  return <CompanionForm initialData={serializedCompanion} categories={serializedCategories} />;
 };
 
 export default CompanionPage;
