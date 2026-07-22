@@ -1,10 +1,10 @@
 "use client";
 
-import { ErrorBoundary } from "react-error-boundary";
+import { ErrorBoundary, FallbackProps } from "react-error-boundary";
 import { ReactNode } from "react";
 
 // Error fallback components
-const ErrorFallback = ({ error, resetErrorBoundary }: { error: Error; resetErrorBoundary: () => void }) => (
+const ErrorFallback = ({ error, resetErrorBoundary }: FallbackProps) => (
   <div className="flex flex-col items-center justify-center min-h-screen p-8 text-center bg-secondary">
     <div className="relative mb-6">
       <div className="w-20 h-20 bg-gradient-to-br from-red-500/20 to-red-600/20 rounded-full flex items-center justify-center border border-red-500/30">
@@ -19,7 +19,9 @@ const ErrorFallback = ({ error, resetErrorBoundary }: { error: Error; resetError
       Our AI companion encountered an unexpected issue. Don&apos;t worry, we can get back on track.
     </p>
     <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4 mb-6 max-w-md">
-      <p className="text-sm text-destructive font-mono">{error.message}</p>
+      <p className="text-sm text-destructive font-mono">
+        {error instanceof Error ? error.message : String(error)}
+      </p>
     </div>
     <button
       onClick={resetErrorBoundary}
@@ -30,7 +32,7 @@ const ErrorFallback = ({ error, resetErrorBoundary }: { error: Error; resetError
   </div>
 );
 
-const NavbarErrorFallback = ({ resetErrorBoundary }: { error: Error; resetErrorBoundary: () => void }) => (
+const NavbarErrorFallback = ({ resetErrorBoundary }: FallbackProps) => (
   <div className="w-full h-16 bg-secondary border-b border-primary/10 flex items-center justify-center">
     <div className="flex items-center gap-3 text-muted-foreground">
       <div className="w-8 h-8 bg-destructive/20 rounded-full flex items-center justify-center">
@@ -47,7 +49,7 @@ const NavbarErrorFallback = ({ resetErrorBoundary }: { error: Error; resetErrorB
   </div>
 );
 
-const SidebarErrorFallback = ({ resetErrorBoundary }: { error: Error; resetErrorBoundary: () => void }) => (
+const SidebarErrorFallback = ({ resetErrorBoundary }: FallbackProps) => (
   <div className="w-20 h-full bg-secondary border-r border-primary/10 flex flex-col items-center justify-center">
     <div className="flex flex-col items-center gap-2 text-muted-foreground">
       <div className="w-10 h-10 bg-destructive/20 rounded-lg flex items-center justify-center">
@@ -64,7 +66,7 @@ const SidebarErrorFallback = ({ resetErrorBoundary }: { error: Error; resetError
   </div>
 );
 
-const ContentErrorFallback = ({ error, resetErrorBoundary }: { error: Error; resetErrorBoundary: () => void }) => (
+const ContentErrorFallback = ({ error, resetErrorBoundary }: FallbackProps) => (
   <div className="flex flex-col items-center justify-center min-h-[60vh] p-8 text-center">
     <div className="relative mb-6">
       <div className="w-16 h-16 bg-gradient-to-br from-orange-500/20 to-red-500/20 rounded-full flex items-center justify-center border border-orange-500/30">
@@ -76,7 +78,9 @@ const ContentErrorFallback = ({ error, resetErrorBoundary }: { error: Error; res
       We&apos;re having trouble loading this content. Let&apos;s try again.
     </p>
     <div className="bg-muted/50 border border-border rounded-lg p-3 mb-6 max-w-sm">
-      <p className="text-xs text-muted-foreground font-mono">{error.message}</p>
+      <p className="text-xs text-muted-foreground font-mono">
+        {error instanceof Error ? error.message : String(error)}
+      </p>
     </div>
     <button
       onClick={resetErrorBoundary}
@@ -87,7 +91,7 @@ const ContentErrorFallback = ({ error, resetErrorBoundary }: { error: Error; res
   </div>
 );
 
-const CompanionErrorFallback = ({ resetErrorBoundary }: { error: Error; resetErrorBoundary: () => void }) => (
+const CompanionErrorFallback = ({ resetErrorBoundary }: FallbackProps) => (
   <div className="flex flex-col items-center justify-center min-h-[60vh] p-8 text-center">
     <div className="relative mb-6">
       <div className="w-16 h-16 bg-gradient-to-br from-orange-500/20 to-red-500/20 rounded-full flex items-center justify-center border border-orange-500/30">

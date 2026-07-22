@@ -1,9 +1,9 @@
 "use client";
 
 import { ReactNode } from "react";
-import { ErrorBoundary } from "react-error-boundary";
+import { ErrorBoundary, FallbackProps } from "react-error-boundary";
 
-const LayoutErrorFallback = ({ error, resetErrorBoundary }: { error: Error; resetErrorBoundary: () => void }) => (
+const LayoutErrorFallback = ({ error, resetErrorBoundary }: FallbackProps) => (
   <div className="min-h-screen bg-secondary flex flex-col items-center justify-center p-8 text-center">
     <div className="relative mb-6">
       <div className="w-20 h-20 bg-gradient-to-br from-red-500/20 to-red-600/20 rounded-full flex items-center justify-center border border-red-500/30">
@@ -15,10 +15,13 @@ const LayoutErrorFallback = ({ error, resetErrorBoundary }: { error: Error; rese
     </div>
     <h2 className="text-2xl font-bold text-primary mb-3">Application Error</h2>
     <p className="text-muted-foreground mb-6 max-w-md leading-relaxed">
-      Something went wrong while loading the application. This might be a temporary issue.
+      Something went wrong while loading the application. This might be a
+      temporary issue.
     </p>
     <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4 mb-6 max-w-md">
-      <p className="text-sm text-destructive font-mono">{error.message}</p>
+      <p className="text-sm text-destructive font-mono">
+        {error instanceof Error ? error.message : String(error)}
+      </p>
     </div>
     <div className="flex gap-3">
       <button
@@ -28,7 +31,7 @@ const LayoutErrorFallback = ({ error, resetErrorBoundary }: { error: Error; rese
         Try Again
       </button>
       <button
-        onClick={() => window.location.href = '/'}
+        onClick={() => (window.location.href = "/")}
         className="px-6 py-3 bg-muted text-muted-foreground rounded-lg hover:bg-muted/80 transition-all duration-200 font-medium"
       >
         Go Home
@@ -46,7 +49,7 @@ const SafeLayout = ({ children }: SafeLayoutProps) => {
     <ErrorBoundary
       FallbackComponent={LayoutErrorFallback}
       onError={(error, errorInfo) => {
-        console.error('Layout error:', error, errorInfo);
+        console.error("Layout error:", error, errorInfo);
       }}
     >
       {children}
