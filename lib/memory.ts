@@ -24,7 +24,18 @@ export class MemoryManager {
   private embeddings: GoogleGenerativeAIEmbeddings;
 
   private constructor() {
-    this.redis = Redis.fromEnv();
+    // Initialize Redis only if credentials are available
+    if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
+      this.redis = Redis.fromEnv();
+    } else {
+      console.warn('⚠️  Redis chat history disabled: Upstash Redis not configured');
+      // Create a mock Redis instance that does nothing
+      this.redis = {
+        get: async () => null,
+        set: async () => 'OK',
+      } as any;
+    }
+    
     this.pinecone = new Pinecone({
       apiKey: process.env.PINECONE_API_KEY!,
     });
