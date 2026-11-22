@@ -30,9 +30,28 @@ const ChatIdPage = async ({ params }: ChatIdProps) => {
           userId,
         },
       },
+      sources: {
+        select: {
+          id: true,
+          type: true,
+          title: true,
+          status: true,
+        },
+      },
+      documents: {
+        select: {
+          id: true,
+          title: true,
+          sourceType: true,
+          chunkCount: true,
+          processingStatus: true,
+        },
+      },
       _count: {
         select: {
           messages: true,
+          sources: true,
+          documents: true,
         },
       },
     },

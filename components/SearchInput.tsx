@@ -1,54 +1,85 @@
 "use client";
 
-import { ChangeEventHandler, useEffect, useState, useTransition, useMemo } from "react";
-import { Search } from "lucide-react";
+import { ChangeEventHandler, useEffect, useState } from "react";
+import { Search, X } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Input } from "@/components/ui/input";
-import { useDebounce } from "@/hooks/useDebounce";
 
-const SearchInput = () => {
+interface SearchInputProps {
+  value?: string;
+  onChange?: (value: string) => void;
+  placeholder?: string;
+}
+
+const SearchInput = ({
+  value: controlledValue,
+  onChange: controlledOnChange,
+  placeholder = "Search...",
+}: SearchInputProps) => {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [isPending, startTransition] = useTransition();
 
-  const name = searchParams.get("name");
-  const [value, setValue] = useState(name || "");
-  const debouncedValue = useDebounce<string>(value, 300); // Reduced debounce time
+  const isControlled = controlledOnChange !== undefined;
 
-  // Memoize current params to avoid recreating URLSearchParams
-  const currentParams = useMemo(() => {
-    return new URLSearchParams(searchParams.toString());
-  }, [searchParams]);
+  const urlName = searchParams.get("name") || "";
+  const [internalValue, setInternalValue] = useState(urlName);
 
-  const onChange: ChangeEventHandler<HTMLInputElement> = (e) => {
-    setValue(e.target.value);
+  const currentValue = isControlled ? (controlledValue ?? "") : internalValue;
+
+  const handleChange: ChangeEventHandler<HTMLInputElement> = (e) => {
+    const nextVal = e.target.value;
+    if (isControlled) {
+      controlledOnChange(nextVal);
+    } else {
+      setInternalValue(nextVal);
+    }
   };
 
-  useEffect(() => {
-    startTransition(() => {
-      const params = new URLSearchParams(currentParams);
+  const handleClear = () => {
+    if (isControlled) {
+      controlledOnChange("");
+    } else {
+      setInternalValue("");
+    }
+  };
 
-      if (debouncedValue) {
-        params.set("name", debouncedValue);
+  // If uncontrolled, sync with URL
+  useEffect(() => {
+    if (isControlled) return;
+
+    const timer = setTimeout(() => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (internalValue.trim()) {
+        params.set("name", internalValue.trim());
       } else {
         params.delete("name");
       }
-
       const newUrl = `${window.location.pathname}?${params.toString()}`;
       router.push(newUrl, { scroll: false });
-    });
-  }, [debouncedValue, router, currentParams]);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [internalValue, isControlled, router, searchParams]);
 
   return (
     <div className="relative">
-      <Search className={`absolute h-4 w-4 top-3 left-4 text-muted-foreground transition-opacity ${isPending ? 'opacity-50' : ''}`} />
+      <Search className="absolute h-4 w-4 top-3 left-4 text-muted-foreground pointer-events-none" />
       <Input
-        onChange={onChange}
-        value={value}
-        placeholder="Search..."
-        className={`pl-10 bg-primary/10 transition-opacity ${isPending ? 'opacity-75' : ''}`}
-        disabled={isPending}
+        onChange={handleChange}
+        value={currentValue}
+        placeholder={placeholder}
+        className="pl-10 pr-10 bg-primary/10"
       />
+      {currentValue && (
+        <button
+          type="button"
+          onClick={handleClear}
+          className="absolute right-3 top-3 text-muted-foreground hover:text-foreground transition cursor-pointer"
+          aria-label="Clear search"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      )}
     </div>
   );
 };

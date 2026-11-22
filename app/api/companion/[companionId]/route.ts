@@ -7,6 +7,59 @@ import { MemoryManager } from "@/lib/memory";
 import { contextTypeArray } from "@/app/constants/contextType";
 import { getCompanionContextDir, generateSafeFileName } from "@/lib/fileStorage";
 
+export async function GET(
+  req: NextRequest,
+  { params }: { params: Promise<{ companionId: string }> }
+) {
+  try {
+    const { companionId } = await params;
+
+    const companion = await prismadb.companion.findUnique({
+      where: { id: companionId },
+      include: {
+        sources: {
+          select: {
+            id: true,
+            type: true,
+            title: true,
+            status: true,
+            totalItems: true,
+            processedItems: true,
+            failedItems: true,
+          },
+        },
+        documents: {
+          select: {
+            id: true,
+            title: true,
+            sourceType: true,
+            chunkCount: true,
+            processingStatus: true,
+            updatedAt: true,
+          },
+          orderBy: { updatedAt: "desc" },
+        },
+        _count: {
+          select: {
+            messages: true,
+            sources: true,
+            documents: true,
+          },
+        },
+      },
+    });
+
+    if (!companion) {
+      return NextResponse.json({ error: "Companion not found" }, { status: 404 });
+    }
+
+    return NextResponse.json(companion);
+  } catch (error) {
+    console.error("[COMPANION_GET]", error);
+    return NextResponse.json({ error: "Internal Error" }, { status: 500 });
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     const user = await currentUser();
@@ -21,31 +74,22 @@ export async function POST(req: NextRequest) {
     const instructions = formData.get("instructions") as string;
     const seed = formData.get("seed") as string;
     const img = formData.get("img") as string;
-    const categoryId = formData.get("categoryId") as string;
     const contextsJson = formData.get("contexts") as string;
 
-    if (
-      !name ||
-      !description ||
-      !instructions ||
-      !seed ||
-      !img ||
-      !categoryId
-    ) {
+    if (!name || !description || !img) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
     // Create companion
     const companion = await prismadb.companion.create({
       data: {
-        categoryId,
         userId: user.id,
         userName: user.firstName,
         img,
         name,
         description,
-        instructions,
-        seed,
+        instructions: instructions || null,
+        seed: seed || null,
       },
     });
 
@@ -161,17 +205,9 @@ export async function PATCH(
     const instructions = formData.get("instructions") as string;
     const seed = formData.get("seed") as string;
     const img = formData.get("img") as string;
-    const categoryId = formData.get("categoryId") as string;
     const contextsJson = formData.get("contexts") as string;
 
-    if (
-      !name ||
-      !description ||
-      !instructions ||
-      !seed ||
-      !img ||
-      !categoryId
-    ) {
+    if (!name || !description || !img) {
       return NextResponse.json("Missing required fields", { status: 400 });
     }
 
@@ -188,12 +224,11 @@ export async function PATCH(
     const companion = await prismadb.companion.update({
       where: { id: companionId },
       data: {
-        categoryId,
         img,
         name,
         description,
-        instructions,
-        seed,
+        instructions: instructions || null,
+        seed: seed || null,
       },
     });
 

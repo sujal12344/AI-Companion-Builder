@@ -37,3 +37,9 @@ next-env.d.ts
 
 # clerk configuration (can include secrets)
 /.clerk/
+
+# Python & Voice Service
+__pycache__/
+*.py[cod]
+*$py.class
+voice-service/data/

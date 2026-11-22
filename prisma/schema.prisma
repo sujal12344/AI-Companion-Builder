@@ -7,12 +7,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Category {
-  id         String      @id @default(uuid())
-  name       String
-  companions Companion[]
-}
-
 model Companion {
   id          String @id @default(uuid())
   userId      String
@@ -27,14 +21,12 @@ model Companion {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  category   Category @relation(fields: [categoryId], references: [id])
-  categoryId String
-
   messages Message[]
   contexts CompanionContext[]
+  sources  Source[]
+  documents SourceDocument[]
+  jobs     IngestionJob[]
   // @@fulltext([name])
-
-  @@index([categoryId])
 }
 
 enum ContextType {
@@ -67,6 +59,121 @@ model CompanionContext {
   companionId String
 
   @@index([companionId])
+}
+
+// New RAG-based source management models
+
+enum SourceType {
+  YOUTUBE_CHANNEL
+  YOUTUBE_VIDEO
+  YOUTUBE_PLAYLIST
+  WEBSITE
+  RSS_FEED
+  PODCAST_FEED
+  FILE_UPLOAD
+  TEXT_PASTE
+  GITHUB_REPO
+  GITHUB_PROFILE
+  SOCIAL_EXPORT
+}
+
+enum SourceStatus {
+  PENDING
+  DISCOVERING
+  DISCOVERED
+  INGESTING
+  READY
+  PARTIAL
+  FAILED
+  PAUSED
+  NEEDS_TRANSCRIPT
+}
+
+enum ProcessingStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  NEEDS_TRANSCRIPT
+  SKIPPED
+}
+
+model Source {
+  id            String       @id @default(uuid())
+  companionId   String
+  userId        String
+  type          SourceType
+  title         String
+  originalUrl   String?
+  canonicalUrl  String?
+  configuration Json?        // Flexible config for source-specific settings
+  status        SourceStatus @default(PENDING)
+  totalItems    Int          @default(0)
+  processedItems Int         @default(0)
+  failedItems   Int          @default(0)
+  lastSyncedAt  DateTime?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  companion     Companion          @relation(fields: [companionId], references: [id], onDelete: Cascade)
+  documents     SourceDocument[]
+  jobs          IngestionJob[]
+
+  @@index([companionId])
+  @@index([userId])
+  @@index([status])
+}
+
+model SourceDocument {
+  id              String           @id @default(uuid())
+  sourceId        String
+  companionId     String
+  externalId      String           // Platform-specific ID (e.g., YouTube video ID)
+  title           String
+  content         String           @db.Text
+  sourceUrl       String?
+  sourceType      SourceType
+  author          String?
+  publishedAt     DateTime?
+  metadata        Json?            // Flexible metadata (thumbnails, duration, etc.)
+  contentHash     String           // For deduplication
+  processingStatus ProcessingStatus @default(PENDING)
+  chunkCount      Int              @default(0)
+  errorMessage    String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  source          Source           @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  companion       Companion        @relation(fields: [companionId], references: [id], onDelete: Cascade)
+
+  @@unique([sourceId, externalId])
+  @@index([sourceId])
+  @@index([companionId])
+  @@index([processingStatus])
+  @@index([contentHash])
+}
+
+model IngestionJob {
+  id             String        @id @default(uuid())
+  sourceId       String
+  companionId    String
+  status         SourceStatus  @default(PENDING)
+  stage          String?       // Current processing stage
+  cursor         String?       // For resumable pagination
+  processedItems Int           @default(0)
+  failedItems    Int           @default(0)
+  errorMessage   String?       @db.Text
+  startedAt      DateTime?
+  completedAt    DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  source         Source        @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  companion      Companion     @relation(fields: [companionId], references: [id], onDelete: Cascade)
+
+  @@index([sourceId])
+  @@index([companionId])
+  @@index([status])
 }
 
 enum Role {

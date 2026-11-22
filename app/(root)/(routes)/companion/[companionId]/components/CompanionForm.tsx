@@ -3,9 +3,9 @@
 import z from "zod";
 import axios from "axios";
 
-import { Category, Companion, ContextType } from "@prisma/client";
+import { Companion } from "@prisma/client";
 import { useForm } from "react-hook-form";
-import { Wand2 } from "lucide-react";
+import { Wand2, Sparkles, User, FileText, Loader2, Bot } from "lucide-react";
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Separator } from "@/components/ui/separator";
@@ -20,44 +20,19 @@ import {
 } from "@/components/ui/form";
 import ImageUpload from "@/components/ImageUpload";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { SelectGroup } from "@radix-ui/react-select";
-import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { useRouter } from "next/navigation";
 import CompanionFormSkeleton from "../../loading";
 import { Suspense, useState } from "react";
-import { ContextUpload, ContextItem } from "@/components/ContextUpload";
-import { contextTypeArray } from "@/app/constants/contextType";
 import errorResponse from "@/lib/errorResponse";
+import { SourceList } from "@/components/sources/SourceList";
+import { AddSourceDialog } from "@/components/sources/AddSourceDialog";
 
 interface CompanionFormProps {
-  initialData: (Companion & { contexts?: ContextItem[] }) | null;
-  categories: Category[];
+  initialData: Companion | null;
+  initialSources?: any[];
 }
-
-const PREAMBLE = `You are a fictional character whose name is Elon. You are a visionary entrepreneur and inventor. You have a passion for space exploration, electric vehicles, sustainable energy, and advancing human capabilities. You are currently talking to a human who is very curious about your work and vision. You are ambitious and forward-thinking, with a touch of wit. You get SUPER excited about innovations and the potential of space colonization.
-`;
-
-const SEED_CHAT = `Human: Hi Elon, how's your day been?
-Elon: Busy as always. Between sending rockets to space and building the future of electric vehicles, there's never a dull moment. How about you?
-
-Human: Just a regular day for me. How's the progress with Mars colonization?
-Elon: We&apos;re making strides! Our goal is to make life multi-planetary. Mars is the next logical step. The challenges are immense, but the potential is even greater.
-
-Human: That sounds incredibly ambitious. Are electric vehicles part of this big picture?
-Elon: Absolutely! Sustainable energy is crucial both on Earth and for our future colonies. Electric vehicles, like those from Tesla, are just the beginning. We&apos;re not just changing the way we drive; We&apos;re changing the way we live.
-
-Human: It's fascinating to see your vision unfold. Any new projects or innovations you're excited about?
-Elon: Always! But right now, I'm particularly excited about Neuralink. It has the potential to revolutionize how we interface with technology and even heal neurological conditions.
-`;
 
 const formSchema = z.object({
   name: z.string().min(1, {
@@ -66,50 +41,22 @@ const formSchema = z.object({
   description: z.string().min(1, {
     message: "Description is required.",
   }).trim(),
-  instructions: z.string().min(20, {
-    message: "Instructions required at least 20 characters.",
-  }).trim(),
-  seed: z.string().min(20, {
-    message: "Seed required at least 20 characters.",
-  }).trim(),
+  instructions: z.string().optional(),
+  seed: z.string().optional(),
   img: z.string().min(1, {
     message: "Image is required",
   }).trim(),
-  categoryId: z.string().min(1, {
-    message: "Category is required",
-  }).trim(),
-  contexts: z
-    .array(
-      z.object({
-        type: z.nativeEnum(ContextType),
-        title: z.string().trim(),
-        content: z.string().trim().optional(),
-        url: z.string().trim().optional(),
-      })
-    )
-    .optional(),
 });
 
 export const CompanionForm = ({
   initialData,
-  categories,
+  initialSources = [],
 }: CompanionFormProps) => {
   const { toast } = useToast();
   const router = useRouter();
 
-  // Initialize contexts from existing data
-  const [contexts, setContexts] = useState<ContextItem[]>(() => {
-    if (initialData?.contexts) {
-      return initialData.contexts.map((ctx: ContextItem) => ({
-        id: ctx.id,
-        type: ctx.type,
-        title: ctx.title,
-        content: ctx.content,
-        url: ctx.url,
-      }));
-    }
-    return [];
-  });
+  const [showAddSource, setShowAddSource] = useState(false);
+  const [sourceListKey, setSourceListKey] = useState(0);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -120,8 +67,6 @@ export const CompanionForm = ({
           instructions: initialData.instructions || "",
           seed: initialData.seed || "",
           img: initialData.img,
-          categoryId: initialData.categoryId,
-          contexts: initialData.contexts || [],
         }
       : {
           name: "",
@@ -129,8 +74,6 @@ export const CompanionForm = ({
           instructions: "",
           seed: "",
           img: "",
-          categoryId: "",
-          contexts: [],
         },
   });
 
@@ -140,28 +83,8 @@ export const CompanionForm = ({
     try {
       const formData = new FormData();
 
-      // Append scalar fields; handle contexts separately
       Object.entries(values).forEach(([key, value]) => {
-        if (key === "contexts") return;
         formData.append(key, value as string);
-      });
-
-      // Build and append contexts JSON to match server expectations
-      const contextsPayload = contexts.map((context) => {
-        const base = { type: context.type, title: context.title };
-        if (context.type === "TEXT")
-          return { ...base, content: context.content || "" };
-        if (context.type === "LINK") return { ...base, url: context.url || "" };
-        return base; // file types
-      });
-      formData.append("contexts", JSON.stringify(contextsPayload));
-
-      // Add files for document contexts
-      contexts.forEach((context, index) => {
-        if (context.type === "LINK" || context.type === "TEXT") return;
-        if (contextTypeArray.includes(context.type) && context.file) {
-          formData.append(`file_${index}`, context.file);
-        }
       });
 
       if (initialData) {
@@ -184,27 +107,36 @@ export const CompanionForm = ({
 
   return (
     <Suspense fallback={<CompanionFormSkeleton />}>
-      <div className="h-full p-4 space-y-2 max-w-3xl mx-auto">
+      <div className="h-full p-4 space-y-6 max-w-4xl mx-auto">
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(onSubmit)}
-            className="space-y-8 pb-10"
+            className="rounded-2xl border border-border/70 bg-card/50 backdrop-blur-md p-6 sm:p-8 shadow-sm space-y-6"
           >
-            <div className="space-y-2 w-full">
-              {/* <div className="space-y-2 w-full col-span-2"> */}
+            {/* Header */}
+            <div className="flex items-center gap-3 pb-4 border-b border-border/50">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0 shadow-inner">
+                <Bot className="w-5 h-5 text-primary" />
+              </div>
               <div>
-                <h3 className="text-lg font-medium">General Information</h3>
-                <p className="text-sm text-muted-foreground">
-                  General Information about your companion
+                <h3 className="text-lg sm:text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
+                  <span>General Information</span>
+                  <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-secondary/80 text-muted-foreground font-normal">
+                    Identity
+                  </span>
+                </h3>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Set up the visual appearance, name, and role description of your AI companion
                 </p>
               </div>
-              <Separator className="bg-primary/10" />
             </div>
+
+            {/* Avatar Upload */}
             <FormField
               control={form.control}
               name="img"
               render={({ field }) => (
-                <FormItem className="flex flex-col items-center justify-center space-y-4">
+                <FormItem className="flex flex-col items-center justify-center">
                   <FormControl>
                     <ImageUpload
                       disabled={isLoading}
@@ -217,166 +149,122 @@ export const CompanionForm = ({
                 </FormItem>
               )}
             />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+            {/* Name & Description Inputs */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2">
               <FormField
                 name="name"
                 control={form.control}
                 render={({ field }) => (
-                  <FormItem className="col-span-2 md:col-span-1">
-                    <FormLabel>Name</FormLabel>
+                  <FormItem className="space-y-1.5">
+                    <FormLabel className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                      <User className="w-3.5 h-3.5 text-primary" />
+                      <span>Name</span>
+                    </FormLabel>
                     <FormControl>
                       <Input
                         disabled={isLoading}
-                        placeholder="Elon Musk"
+                        placeholder="e.g. Piyush Garg AI"
+                        className="h-10 text-sm bg-background/60 border-border/70 focus-visible:ring-primary/30"
                         {...field}
                       />
                     </FormControl>
-                    <FormDescription>
-                      This is how your AI Companion will be named.
+                    <FormDescription className="text-[11px]">
+                      This is how your AI Companion will be named and addressed.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+
               <FormField
                 name="description"
                 control={form.control}
                 render={({ field }) => (
-                  <FormItem className="col-span-2 md:col-span-1">
-                    <FormLabel>Description</FormLabel>
+                  <FormItem className="space-y-1.5">
+                    <FormLabel className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                      <FileText className="w-3.5 h-3.5 text-primary" />
+                      <span>Description</span>
+                    </FormLabel>
                     <FormControl>
                       <Input
                         disabled={isLoading}
-                        placeholder="CEO & Founder of Tesla, SpaceX"
+                        placeholder="e.g. Software Engineer, Educator & YouTuber"
+                        className="h-10 text-sm bg-background/60 border-border/70 focus-visible:ring-primary/30"
                         {...field}
                       />
                     </FormControl>
-                    <FormDescription>
-                      Short Description for your AI Companion
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                name="categoryId"
-                control={form.control}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Category</FormLabel>
-                    <Select
-                      disabled={isLoading}
-                      onValueChange={field.onChange}
-                      value={field.value}
-                      defaultValue={field.value}
-                      // autoComplete="on"
-                    >
-                      <FormControl>
-                        <SelectTrigger className="bg-background">
-                          <SelectValue
-                            defaultValue={field.value}
-                            placeholder="Select a category"
-                          />
-                        </SelectTrigger>
-                      </FormControl>
-
-                      <SelectContent>
-                        <SelectGroup>
-                          {categories.map((category) => (
-                            <SelectItem key={category.id} value={category.id}>
-                              {category.name}
-                            </SelectItem>
-                          ))}
-                        </SelectGroup>
-                      </SelectContent>
-                    </Select>
-                    <FormDescription>
-                      Select a category for your AI
+                    <FormDescription className="text-[11px]">
+                      A short summary of what this companion represents.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
               />
             </div>
-            <div className="space-y-2 w-full">
-              <div>
-                <h3 className="text-lg font-medium">Configurations</h3>
-                <p className="text-sm text-muted-foreground">
-                  Detailed instructions of AI Behaviour
-                </p>
-              </div>
-              <Separator className="bg-primary/10" />
-            </div>
-            <FormField
-              name="instructions"
-              control={form.control}
-              render={({ field }) => (
-                <FormItem className="col-span-2 md:col-span-1">
-                  <FormLabel>Instructions</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      className="resize-none bg-background"
-                      disabled={isLoading}
-                      rows={7}
-                      placeholder={PREAMBLE}
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormDescription>
-                    Describe in detail your companion&apos;s backstory and
-                    relevant details
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              name="seed"
-              control={form.control}
-              render={({ field }) => (
-                <FormItem className="col-span-2 md:col-span-1">
-                  <FormLabel>Example Conversation</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      className="resize-none bg-background"
-                      disabled={isLoading}
-                      rows={7}
-                      placeholder={SEED_CHAT}
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormDescription>
-                    Describe in detail your companion&apos;s backstory and
-                    relevant details
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
 
-            <div className="space-y-2 w-full">
-              <div>
-                <h3 className="text-lg font-medium">Knowledge Base</h3>
-                <p className="text-sm text-muted-foreground">
-                  Add context sources to enhance your companion's knowledge
-                </p>
-              </div>
-              <Separator className="bg-primary/10" />
-            </div>
-
-            <ContextUpload
-              contexts={contexts}
-              onChange={setContexts}
-              disabled={isLoading}
-            />
-            <div className="flex w-full justify-center">
-              <Button size={"lg"} disabled={isLoading}>
-                {initialData ? "Edit your companion" : "Create your companion"}
-                <Wand2 className="w-4 h-4 ml-2" />
+            {/* Submit Action Button */}
+            <div className="flex w-full justify-end pt-4 border-t border-border/40">
+              <Button
+                type="submit"
+                size="lg"
+                disabled={isLoading}
+                className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold h-10 px-6 rounded-xl shadow-md transition-all gap-2 text-xs sm:text-sm"
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Saving changes...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>{initialData ? "Save Companion Changes" : "Create AI Companion"}</span>
+                    <Wand2 className="w-4 h-4" />
+                  </>
+                )}
               </Button>
             </div>
           </form>
         </Form>
+
+        {/* Knowledge & Social Sources Section (Decoupled from Companion General Form) */}
+        <div className="space-y-4 pt-6">
+          <div className="space-y-2 w-full">
+            <div>
+              <h3 className="text-lg font-medium">Knowledge & Social Sources</h3>
+              <p className="text-sm text-muted-foreground">
+                Connect YouTube channels and social platforms to power your companion with real knowledge
+              </p>
+            </div>
+            <Separator className="bg-primary/10" />
+          </div>
+
+          {initialData ? (
+            <div className="border rounded-lg p-4">
+              <SourceList
+                key={sourceListKey}
+                companionId={initialData.id}
+                initialSources={initialSources}
+                onAddSource={() => setShowAddSource(true)}
+              />
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground italic">
+              You can connect YouTube channels, social profiles, and knowledge sources right after creating your companion.
+            </p>
+          )}
+        </div>
+
+        {initialData && (
+          <AddSourceDialog
+            open={showAddSource}
+            onOpenChange={setShowAddSource}
+            companionId={initialData.id}
+            onSourceAdded={() => {
+              setSourceListKey((prev) => prev + 1);
+            }}
+          />
+        )}
       </div>
     </Suspense>
   );

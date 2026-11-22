@@ -4,10 +4,19 @@ import { absoluteUrl } from "@/lib/utils";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
+export const dynamic = "force-dynamic";
+
 const settingUrl = absoluteUrl("/settings");
 
 export async function GET() {
   try {
+    if (!process.env.STRIPE_SECRET_KEY) {
+      return NextResponse.json(
+        { error: "Stripe API key is not configured" },
+        { status: 500 }
+      );
+    }
+
     const { userId } = await auth();
     const user = await currentUser();
 

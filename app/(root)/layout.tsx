@@ -82,7 +82,7 @@ const RootLayout = async ({ children }: { children: React.ReactNode }) => {
 
   return (
     <RootErrorBoundary>
-      <div className="h-full">
+      <div className="h-full min-h-screen bg-background">
         {/* Navbar with error boundary and suspense */}
         <NavbarErrorBoundary>
           <Suspense fallback={<NavbarSkeleton />}>
@@ -100,7 +100,7 @@ const RootLayout = async ({ children }: { children: React.ReactNode }) => {
         </div>
 
         {/* Main content with error boundary */}
-        <main className="md:pl-20 pt-16 dark:bg-black bg-white">
+        <main className="md:pl-20 pt-16 min-h-screen bg-background">
           <ContentErrorBoundary>
             <Suspense fallback={<ContentSkeleton />}>{children}</Suspense>
           </ContentErrorBoundary>
