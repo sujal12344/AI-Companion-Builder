@@ -27,7 +27,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <ClerkProvider>
+    <ClerkProvider
+      publishableKey={
+        process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ||
+        "pk_test_cHJvdmVuLWZhbGNvbi04OC5jbGVyay5hY2NvdW50cy5kZXYk"
+      }
+    >
       <html lang="en" suppressHydrationWarning>
         <body className={cn("bg-background text-foreground antialiased", poppins.className)}>
           <ThemeProvider
