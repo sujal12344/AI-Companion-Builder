@@ -1,7 +1,7 @@
 "use client";
 
 import ChatHeader from "@/components/ChatHeader";
-import { Companion, Message } from "@prisma/client";
+import { Companion, Message, SourceType } from "@prisma/client";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { useCompletion } from "ai/react";
@@ -12,8 +12,23 @@ import { ChatMessageProps } from "@/components/ChatMessage";
 interface ChatClientProps {
   companion: Companion & {
     messages: Message[];
+    sources?: {
+      id: string;
+      type: SourceType;
+      title: string;
+      status: string;
+    }[];
+    documents?: {
+      id: string;
+      title: string;
+      sourceType: SourceType;
+      chunkCount: number;
+      processingStatus: string;
+    }[];
     _count: {
       messages: number;
+      sources?: number;
+      documents?: number;
     };
   };
 }
@@ -27,14 +42,25 @@ export const ChatClient = ({ companion }: ChatClientProps) => {
   const { input, isLoading, setInput, handleSubmit, handleInputChange } = useCompletion({
     api: `/api/chat/${companion.id}`,
     onFinish(prompt, completion) {
-
-      const systemMessage: ChatMessageProps = {
-        role: "system",
-        content: completion
-      };
-      setMessages((current) => [...current, systemMessage]);
+      try {
+        // Try to parse as JSON (new format with citations)
+        const parsed = JSON.parse(completion);
+        const systemMessage: ChatMessageProps = {
+          role: "system",
+          content: parsed.content,
+          citations: parsed.citations,
+        };
+        setMessages((current) => [...current, systemMessage]);
+      } catch {
+        // Fallback to plain text (legacy format)
+        const systemMessage: ChatMessageProps = {
+          role: "system",
+          content: completion,
+        };
+        setMessages((current) => [...current, systemMessage]);
+      }
+      
       setInput("");
-
       router.refresh();
     },
   });

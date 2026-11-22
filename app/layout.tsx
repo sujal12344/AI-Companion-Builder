@@ -29,7 +29,7 @@ export default function RootLayout({
   return (
     <ClerkProvider>
       <html lang="en" suppressHydrationWarning>
-        <body className={cn(`dark:bg-black bg-white`, poppins.className)}>
+        <body className={cn("bg-background text-foreground antialiased", poppins.className)}>
           <ThemeProvider
             attribute="class"
             defaultTheme="system"

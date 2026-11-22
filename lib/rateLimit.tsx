@@ -8,11 +8,16 @@ export async function rateLimit(identifier: string) {
     return { success: true, limit: 10, remaining: 10, reset: 0 };
   }
 
-  const ratelimit = new Ratelimit({
-    redis: Redis.fromEnv(),
-    limiter: Ratelimit.slidingWindow(10, "10 s"),
-    analytics: true,
-    prefix: "@upstash/ratelimit",
-  });
-  return await ratelimit.limit(identifier);
+  try {
+    const ratelimit = new Ratelimit({
+      redis: Redis.fromEnv(),
+      limiter: Ratelimit.slidingWindow(10, "10 s"),
+      analytics: true,
+      prefix: "@upstash/ratelimit",
+    });
+    return await ratelimit.limit(identifier);
+  } catch (error) {
+    console.warn('⚠️  Rate limiting bypassed due to Redis connection/DNS error:', error);
+    return { success: true, limit: 10, remaining: 10, reset: 0 };
+  }
 }

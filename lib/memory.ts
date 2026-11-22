@@ -22,6 +22,8 @@ export class MemoryManager {
   private redis: Redis;
   private pinecone: Pinecone;
   private embeddings: GoogleGenerativeAIEmbeddings;
+  private memoryHistory: Map<string, { score: number; member: string }[]> = new Map();
+  private redisAvailable: boolean = true;
 
   private constructor() {
     // Initialize Redis only if credentials are available
@@ -29,6 +31,7 @@ export class MemoryManager {
       this.redis = Redis.fromEnv();
     } else {
       console.warn('⚠️  Redis chat history disabled: Upstash Redis not configured');
+      this.redisAvailable = false;
       // Create a mock Redis instance that does nothing
       this.redis = {
         get: async () => null,
@@ -340,10 +343,25 @@ export class MemoryManager {
     if (!companionKey?.userId) return null;
 
     const key = this.generateRedisCompanionKey(companionKey);
-    return await this.redis.zadd(key, {
-      score: Date.now(),
-      member: text,
-    });
+
+    // Maintain local in-memory history fallback
+    const current = this.memoryHistory.get(key) || [];
+    current.push({ score: Date.now(), member: text });
+    if (current.length > 50) current.shift();
+    this.memoryHistory.set(key, current);
+
+    if (!this.redisAvailable) return null;
+
+    try {
+      return await this.redis.zadd(key, {
+        score: Date.now(),
+        member: text,
+      });
+    } catch (error) {
+      console.warn("⚠️ Upstash Redis writeToHistory failed, falling back to local memory:", error);
+      this.redisAvailable = false;
+      return null;
+    }
   }
 
   // Get recent chat history
@@ -352,19 +370,45 @@ export class MemoryManager {
 
     const key = this.generateRedisCompanionKey(companionKey);
 
-    const result = await this.redis.zrange(key, 0, Date.now(), { byScore: true });
+    if (this.redisAvailable) {
+      try {
+        const result = await this.redis.zrange(key, 0, Date.now(), { byScore: true });
+        if (Array.isArray(result) && result.length > 0) {
+          return result.slice(-10).join("\n");
+        }
+      } catch (error) {
+        console.warn("⚠️ Upstash Redis readLatestHistory failed, falling back to local memory:", error);
+        this.redisAvailable = false;
+      }
+    }
 
-    return result.slice(-10).join("\n"); // Get last 10 messages
+    const localItems = this.memoryHistory.get(key) || [];
+    return localItems.slice(-10).map((item) => item.member).join("\n");
   }
 
   // Initialize chat history with seed content
   public async seedChatHistory(seedContent: string, delimiter: string = "\n", companionKey: CompanionKey) {
     const key = this.generateRedisCompanionKey(companionKey);
-    if (await this.redis.exists(key)) return;
+    const lines = seedContent.split(delimiter).filter((line) => line.trim().length > 0);
 
-    const lines = seedContent.split(delimiter);
-    for (let i = 0; i < lines.length; i++) {
-      await this.redis.zadd(key, { score: i, member: lines[i] });
+    if (!this.memoryHistory.has(key)) {
+      this.memoryHistory.set(
+        key,
+        lines.map((member, i) => ({ score: i, member }))
+      );
+    }
+
+    if (!this.redisAvailable) return;
+
+    try {
+      if (await this.redis.exists(key)) return;
+
+      for (let i = 0; i < lines.length; i++) {
+        await this.redis.zadd(key, { score: i, member: lines[i] });
+      }
+    } catch (error) {
+      console.warn("⚠️ Upstash Redis seedChatHistory failed, falling back to local memory:", error);
+      this.redisAvailable = false;
     }
   }
 }

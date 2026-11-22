@@ -1,0 +1,2 @@
+allowBuilds:
+  '@prisma/client': set this to true or false

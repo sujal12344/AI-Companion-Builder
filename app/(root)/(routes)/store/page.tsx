@@ -1,34 +1,30 @@
-import SearchInput from "@/components/SearchInput";
-import Categories from "@/components/Categories";
 import prismadb from "@/lib/prismadb";
-import Companions from "@/components/Companions";
+import CompanionsFeed from "@/components/CompanionsFeed";
 import { Suspense } from "react";
 import CompanionSkeleton from "@/components/companionsSkeleton";
 import { currentUser } from "@clerk/nextjs/server";
+import SearchInput from "@/components/SearchInput";
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
 
 interface rootPageProps {
   searchParams: Promise<{
-    categoryId: string;
-    name: string;
+    name?: string;
   }>;
 }
 
 const StorePage = async ({ searchParams }: rootPageProps) => {
   try {
     const user = await currentUser();
-    const { categoryId, name } = await searchParams;
+    const { name } = await searchParams;
 
     const data = await prismadb.companion.findMany({
       where: {
-        categoryId: categoryId,
         userId: user?.id,
-        name,
       },
       orderBy: {
-        createdAt: "asc",
+        createdAt: "desc",
       },
       include: {
         _count: {
@@ -39,17 +35,17 @@ const StorePage = async ({ searchParams }: rootPageProps) => {
       },
     });
 
-    const categories = await prismadb.category.findMany();
-
     return (
       <div className="h-full p-4 space-y-2">
         <div className="text-2xl font-semibold mb-4">
           Your Created Companions
         </div>
-        <SearchInput />
-        <Categories data={categories} />
         <Suspense fallback={<CompanionSkeleton />}>
-          <Companions data={data} />
+          <CompanionsFeed
+            initialData={data}
+            userId={user?.id}
+            initialName={name}
+          />
         </Suspense>
       </div>
     );

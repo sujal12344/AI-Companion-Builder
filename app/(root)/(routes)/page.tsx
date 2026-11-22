@@ -1,59 +1,49 @@
 import { Suspense } from "react";
-
-import SearchInput from "@/components/SearchInput";
-import Categories from "@/components/Categories";
 import prismadb from "@/lib/prismadb";
-import Companions from "@/components/Companions";
+import CompanionsFeed from "@/components/CompanionsFeed";
 import CompanionSkeleton from "@/components/companionsSkeleton";
 import { CompanionErrorBoundary } from "@/components/ErrorBoundaryWrapper";
 import ServerErrorFallback from "@/components/ServerErrorFallback";
+import SearchInput from "@/components/SearchInput";
+import { auth } from "@clerk/nextjs/server";
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
 
 interface rootPageProps {
   searchParams: Promise<{
-    categoryId: string;
-    name: string;
+    name?: string;
   }>;
 }
 
 const RootPage = async ({ searchParams }: rootPageProps) => {
   try {
-    const { categoryId, name } = await searchParams;
+    const { name } = await searchParams;
+    const { userId } = await auth();
 
-    const [data, categories] = await Promise.all([
-      prismadb.companion.findMany({
-        where: {
-          categoryId,
-          name
-        },
-        orderBy: {
-          createdAt: "desc", // Changed to desc for newest first
-        },
-        include: {
-          _count: {
-            select: {
-              messages: true,
-            },
+    const data = await prismadb.companion.findMany({
+      orderBy: {
+        createdAt: "desc", // Newest first
+      },
+      include: {
+        _count: {
+          select: {
+            messages: true,
           },
         },
-        take: 50, // Limit results for better performance
-      }),
-      prismadb.category.findMany({
-        orderBy: {
-          name: "asc",
-        },
-      }),
-    ]);
+      },
+      take: 100, // Load up to 100 companions for instant client filtering
+    });
 
     return (
       <div className="p-4 space-y-2">
-        <SearchInput />
-        <Categories data={categories} />
         <CompanionErrorBoundary>
           <Suspense fallback={<CompanionSkeleton />}>
-            <Companions data={data} />
+            <CompanionsFeed
+              initialData={data}
+              userId={userId}
+              initialName={name}
+            />
           </Suspense>
         </CompanionErrorBoundary>
       </div>

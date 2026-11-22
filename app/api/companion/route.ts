@@ -23,17 +23,9 @@ export async function POST(req: NextRequest) {
     const instructions = formData.get("instructions") as string;
     const seed = formData.get("seed") as string;
     const img = formData.get("img") as string;
-    const categoryId = formData.get("categoryId") as string;
     const contextsJson = formData.get("contexts") as string;
 
-    if (
-      !name ||
-      !description ||
-      !instructions ||
-      !seed ||
-      !img ||
-      !categoryId
-    ) {
+    if (!name || !description || !img) {
       return NextResponse.json("Missing required fields", { status: 400 });
     }
 
@@ -51,14 +43,13 @@ export async function POST(req: NextRequest) {
     // Create companion
     const companion = await prismadb.companion.create({
       data: {
-        categoryId,
         userId: user.id,
         userName: user.firstName,
         img,
         name,
         description,
-        instructions,
-        seed,
+        instructions: instructions || null,
+        seed: seed || null,
       },
     });
 

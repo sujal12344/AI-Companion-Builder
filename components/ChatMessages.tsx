@@ -3,7 +3,7 @@
 import { ElementRef, useEffect, useRef, useState } from "react";
 import { Companion } from "@prisma/client";
 import { ChatMessage, ChatMessageProps } from "@/components/ChatMessage";
-import { v4 } from 'uuid'
+
 interface ChatMessagesProps {
   messages: ChatMessageProps[];
   isLoading: boolean;
@@ -43,12 +43,13 @@ export const ChatMessages = ({
         role="system"
         content={`Hello, I am ${companion.name}, ${companion.description}`}
       />
-      {messages.map((message) => (
+      {messages.map((message, index) => (
         <ChatMessage
-          key={v4()}
+          key={message.id || `msg-${index}`}
           role={message.role}
           content={message.content}
           src={companion.img}
+          citations={message.citations}
         />
       ))}
       {isLoading && <ChatMessage role="system" src={companion.img} isLoading />}

@@ -22,8 +22,33 @@ export function PlaceholdersAndVanishInput({
   className?: string;
 }) {
   const [currentPlaceholder, setCurrentPlaceholder] = useState(0);
+  const [inputHistory, setInputHistory] = useState<string[]>([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
 
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Load history from localStorage on mount
+  useEffect(() => {
+    try {
+      const savedHistory = localStorage.getItem("chat-input-history");
+      if (savedHistory) {
+        setInputHistory(JSON.parse(savedHistory));
+      }
+    } catch (error) {
+      console.warn("Failed to load chat history:", error);
+    }
+  }, []);
+
+  // Save history to localStorage whenever it changes
+  useEffect(() => {
+    if (inputHistory.length > 0) {
+      try {
+        localStorage.setItem("chat-input-history", JSON.stringify(inputHistory.slice(-50))); // Keep last 50
+      } catch (error) {
+        console.warn("Failed to save chat history:", error);
+      }
+    }
+  }, [inputHistory]);
 
   const startAnimation = useCallback(() => {
     intervalRef.current = setInterval(() => {
@@ -163,8 +188,54 @@ export function PlaceholdersAndVanishInput({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // Handle Enter key
     if (e.key === "Enter" && !animating) {
       vanishAndSubmit();
+      return;
+    }
+
+    // Handle Up arrow - navigate to previous message in history
+    if (e.key === "ArrowUp") {
+      e.preventDefault();
+      if (inputHistory.length > 0) {
+        const newIndex = historyIndex === -1 ? inputHistory.length - 1 : Math.max(0, historyIndex - 1);
+        setHistoryIndex(newIndex);
+        const historicalValue = inputHistory[newIndex];
+        setValue(historicalValue);
+        
+        // Trigger onChange to update parent component
+        const syntheticEvent = {
+          target: { value: historicalValue },
+        } as React.ChangeEvent<HTMLInputElement>;
+        onChange && onChange(syntheticEvent);
+      }
+      return;
+    }
+
+    // Handle Down arrow - navigate to next message in history
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      if (historyIndex >= 0) {
+        const newIndex = historyIndex + 1;
+        if (newIndex >= inputHistory.length) {
+          // Clear input when reaching the end
+          setHistoryIndex(-1);
+          setValue("");
+          const syntheticEvent = {
+            target: { value: "" },
+          } as React.ChangeEvent<HTMLInputElement>;
+          onChange && onChange(syntheticEvent);
+        } else {
+          setHistoryIndex(newIndex);
+          const historicalValue = inputHistory[newIndex];
+          setValue(historicalValue);
+          const syntheticEvent = {
+            target: { value: historicalValue },
+          } as React.ChangeEvent<HTMLInputElement>;
+          onChange && onChange(syntheticEvent);
+        }
+      }
+      return;
     }
   };
 
@@ -184,21 +255,31 @@ export function PlaceholdersAndVanishInput({
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    
+    // Add to history (avoid duplicates)
+    const currentValue = inputRef.current?.value || "";
+    if (currentValue.trim() && (inputHistory.length === 0 || inputHistory[inputHistory.length - 1] !== currentValue)) {
+      setInputHistory(prev => [...prev, currentValue]);
+    }
+    
+    // Reset history index
+    setHistoryIndex(-1);
+    
     vanishAndSubmit();
     onSubmit && onSubmit(e);
   };
   return (
     <form
       className={cn(
-        "w-full relative mx-auto bg-zinc-200 dark:bg-zinc-900 h-12 rounded-lg overflow-hidden shadow-[0px_2px_3px_-1px_rgba(0,0,0,0.1),_0px_1px_0px_0px_rgba(25,28,33,0.02),_0px_0px_0px_1px_rgba(25,28,33,0.08)] transition duration-200",
-        value && "bg-gray-50",
+        "w-full relative mx-auto bg-card/75 hover:bg-card border border-border/80 focus-within:border-primary/50 focus-within:ring-1 focus-within:ring-primary/30 h-12 rounded-xl overflow-hidden shadow-sm transition-all duration-200",
+        value && "bg-card",
         className
       )}
       onSubmit={handleSubmit}
     >
       <canvas
         className={cn(
-          "absolute pointer-events-none  text-base transform scale-50 top-[20%] left-2 sm:left-8 origin-top-left filter invert dark:invert-0 pr-20",
+          "absolute pointer-events-none text-base transform scale-50 top-[20%] left-2 sm:left-8 origin-top-left filter invert dark:invert-0 pr-20",
           !animating ? "opacity-0" : "opacity-100"
         )}
         ref={canvasRef}
@@ -207,6 +288,7 @@ export function PlaceholdersAndVanishInput({
         onChange={(e) => {
           if (!animating) {
             setValue(e.target.value);
+            setHistoryIndex(-1); // Reset history navigation when typing
             onChange && onChange(e);
           }
         }}
@@ -215,7 +297,7 @@ export function PlaceholdersAndVanishInput({
         value={value}
         type="text"
         className={cn(
-          "w-full relative text-sm sm:text-base z-50 border-none dark:text-white bg-transparent text-black h-full rounded-full focus:outline-none focus:ring-0 pl-4 sm:pl-10 pr-20 disabled:cursor-not-allowed",
+          "w-full relative text-sm sm:text-base z-50 border-none text-foreground bg-transparent h-full rounded-xl focus:outline-none focus:ring-0 pl-4 sm:pl-8 pr-14 disabled:cursor-not-allowed placeholder:text-muted-foreground",
           animating && "text-transparent dark:text-transparent"
         )}
         title={placeholders[currentPlaceholder]}
@@ -226,20 +308,20 @@ export function PlaceholdersAndVanishInput({
       <button
         disabled={!value}
         type="submit"
-        className="absolute right-2 top-1/2 z-50 -translate-y-1/2 h-[34px] w-[34px] rounded-lg disabled:bg-gray-500 bg-zinc-800 dark:bg-zinc-950 dark:disabled:bg-zinc-800 transition duration-200 flex items-center justify-center"
-        title="Submit"
+        className="absolute right-2 top-1/2 z-50 -translate-y-1/2 h-[34px] w-[34px] rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-30 disabled:bg-primary/40 disabled:cursor-not-allowed transition duration-200 flex items-center justify-center shadow-xs"
+        title="Send message"
       >
         <motion.svg
           xmlns="http://www.w3.org/2000/svg"
-          width="24"
-          height="24"
+          width="20"
+          height="20"
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
-          strokeWidth="2"
+          strokeWidth="2.5"
           strokeLinecap="round"
           strokeLinejoin="round"
-          className="text-gray-300 h-4 w-4"
+          className="text-primary-foreground h-4 w-4"
         >
           <path stroke="none" d="M0 0h24v24H0z" fill="none" />
           <motion.path
@@ -261,7 +343,7 @@ export function PlaceholdersAndVanishInput({
         </motion.svg>
       </button>
 
-      <div className="absolute inset-0 flex items-center rounded-full pointer-events-none">
+      <div className="absolute inset-0 flex items-center rounded-xl pointer-events-none">
         <AnimatePresence mode="wait">
           {!value && (
             <motion.p
@@ -282,7 +364,7 @@ export function PlaceholdersAndVanishInput({
                 duration: 0.3,
                 ease: "linear",
               }}
-              className="dark:text-zinc-500 text-sm sm:text-base font-normal text-neutral-500 pl-4 sm:pl-12 text-left w-[calc(100%-2rem)] truncate"
+              className="text-muted-foreground text-sm sm:text-base font-normal pl-4 sm:pl-8 text-left w-[calc(100%-3rem)] truncate"
             >
               {placeholders[currentPlaceholder]}
             </motion.p>
