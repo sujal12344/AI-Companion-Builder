@@ -217,7 +217,7 @@ export function SourceCard({ source, onUpdate }: SourceCardProps) {
     }, 3000);
 
     return () => clearInterval(interval);
-  }, [source.status, isIngesting, retryingDocId]);
+  }, [source.id, source.status, isIngesting, retryingDocId]);
 
   const handleClearLogs = async () => {
     try {

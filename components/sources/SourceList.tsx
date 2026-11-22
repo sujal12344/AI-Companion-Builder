@@ -59,9 +59,9 @@ export function SourceList({
   const activeStatusesKey = sources.map((s) => s.status).join(",");
 
   useEffect(() => {
-    const hasActiveIngestion = sources.some(
-      (s) => s.status === "DISCOVERING" || s.status === "INGESTING"
-    );
+    const hasActiveIngestion =
+      activeStatusesKey.includes("DISCOVERING") ||
+      activeStatusesKey.includes("INGESTING");
 
     if (!hasActiveIngestion) {
       return;

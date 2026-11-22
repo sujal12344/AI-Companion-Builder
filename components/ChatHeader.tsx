@@ -125,7 +125,7 @@ const ChatHeader = ({ companion }: ChatHeaderProps) => {
       isMounted = false;
       if (timer) clearTimeout(timer);
     };
-  }, [companion.id]);
+  }, [companion.id, companion.documents, companion.sources]);
 
   // Calculate knowledge source statistics fed into this companion
   const docs = documents;
