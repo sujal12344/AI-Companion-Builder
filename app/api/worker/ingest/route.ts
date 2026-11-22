@@ -49,5 +49,5 @@ export const POST = process.env.QSTASH_CURRENT_SIGNING_KEY &&
   ? verifySignatureAppRouter(handler)
   : handler;
 
-export const maxDuration = 300; // 5 minutes timeout
+export const maxDuration = 60; // Max allowed timeout for Vercel Hobby plan (60 seconds)
 export const dynamic = "force-dynamic";
